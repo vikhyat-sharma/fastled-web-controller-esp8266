@@ -3,14 +3,9 @@
 #include <ESP8266mDNS.h>
 #include <FastLED.h>
 #include "secrets.h"
+#include "constants.h"
 
 AsyncWebServer server(80);
-
-#define LED_PIN D2
-#define NUM_LEDS 168
-#define BRIGHTNESS 128
-#define LED_TYPE WS2812B
-#define COLOR_ORDER GRB
 
 CRGB leds[NUM_LEDS];
 uint8_t gHue = 0;
@@ -25,41 +20,6 @@ CRGBPalette16 currentPalette = RainbowColors_p;
 uint8_t customColorR = 255;
 uint8_t customColorG = 0;
 uint8_t customColorB = 0;
-
-const char *patternNames[] = {
-  "Rainbow Cycle",
-  "Moving Dot",
-  "Breathing Effect",
-  "Confetti",
-  "Sinelon",
-  "Juggle",
-  "Twinkle",
-  "Rainbow Glitter",
-  "Beat Wave",
-  "Fire Effect",
-  "Ripple",
-  "Gradient Wave",
-  "Rainbow Pulse",
-  "Plasma",
-  "Noise Rainbow",
-  "Sunrise",
-  "Aurora Borealis",
-  "Ocean Current",
-  "Galaxy Swirl",
-  "Storm Pulse",
-  "Hyperspace Tunnel",
-  "Aura Glow",
-  "Wave Glide",
-  "Comet Tail",
-  "Matrix Rain",
-  "Lava Flow",
-  "Vortex Spin",
-  "Electric Pulse",
-  "Candy Cane Twist",
-  "Palette Cycle"
-};
-
-const int TOTAL_PATTERNS = sizeof(patternNames) / sizeof(patternNames[0]);
 
 uint16_t scaledDelay(uint16_t baseDelay) {
   uint8_t speed = constrain(gSpeed, 1, 100);
@@ -85,9 +45,8 @@ void setup() {
   FastLED.show();
   WiFi.begin(ssid, password);
   unsigned long startAttemptTime = millis();
-  const unsigned long timeout = 10000;
 
-  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < timeout) {
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < WIFI_CONNECT_TIMEOUT_MS) {
     Serial.print(".");
     delay(500);
   }
@@ -113,7 +72,7 @@ void loop() {
   unsigned long now = millis();
 
   if (autoCycle) {
-    if (now - lastChange > 12750) {
+    if (now - lastChange > AUTO_CYCLE_INTERVAL_MS) {
       currentPattern = (currentPattern + 1) % TOTAL_PATTERNS;
       lastChange = now;
     }

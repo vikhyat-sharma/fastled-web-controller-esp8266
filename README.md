@@ -16,6 +16,34 @@ A lightweight, web-based LED strip controller powered by ESP8266, FastLED, and A
 * **JSON API Endpoints** for integration and external control
 * **Modular Codebase** using Arduino tabs for better organization and maintainability
 
+## Requirements
+
+### Hardware
+
+* ESP8266 development board (e.g., NodeMCU, Wemos D1 Mini)
+* Addressable LED strip (e.g., WS2812B / NeoPixel)
+* Suitable power supply for your LED strip
+* USB cable for programming
+
+### Software
+
+* Arduino IDE (latest recommended)
+* ESP8266 board package installed in Arduino IDE
+
+### Arduino Libraries
+
+Install the following libraries via Library Manager:
+
+* FastLED
+* ESPAsyncWebServer
+* ESP8266WiFi
+
+> Note: `ESPAsyncWebServer` may also require `ESPAsyncTCP` depending on your setup.
+
+### Network
+
+* 2.4 GHz Wi-Fi network (ESP8266 does not support 5 GHz)
+
 ## Project Structure
 
 * `fastLED.ino` — Core setup, global state, and pattern implementations
@@ -26,26 +54,14 @@ A lightweight, web-based LED strip controller powered by ESP8266, FastLED, and A
 
 ## Getting Started
 
-1. Install the required libraries in the Arduino IDE:
-
-   * FastLED
-   * ESPAsyncWebServer
-   * ESP8266WiFi
-
+1. Install required libraries in the Arduino IDE
 2. Create your credentials file:
 
    * Copy `secrets.example.h` → `secrets.h`
    * Add your Wi-Fi `ssid` and `password`
-
-3. Upload the code:
-
-   * Select your ESP8266 board
-   * Compile and upload the project
-
-4. Access the controller:
-
-   * Open the Serial Monitor to find the assigned IP address
-   * Enter the IP in your browser
+3. Select your ESP8266 board and upload the code
+4. Open Serial Monitor to find the assigned IP address
+5. Enter the IP address in your browser
 
 ## API Endpoints
 

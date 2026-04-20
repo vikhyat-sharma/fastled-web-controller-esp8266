@@ -54,6 +54,50 @@ Install via Arduino Library Manager:
 
 ---
 
+## 🔌 Wiring Diagram
+
+### Basic Connections (ESP8266 + WS2812B)
+
+ESP8266 (NodeMCU / Wemos D1 Mini) WS2812B LED Strip
+
+3V3 / 5V (external PSU recommended) -> VCC (+5V)
+GND ---------------------------------> GND
+D4 (GPIO2) --------------------------> DIN
+
+
+### 🖼️ Visual Wiring Diagram
+
+                +5V Power Supply
+                     │
+                     │
+          ┌──────────┴──────────┐
+          │                     │
+    ┌─────▼─────┐         ┌─────▼──────────────┐
+    │  LED Strip │         │    ESP8266         │
+    │  WS2812B   │         │ (NodeMCU/Wemos)    │
+    │             │         │                    │
+    │   VCC ◄─────┼─────────┼──── 5V             │
+    │   GND ◄─────┼─────────┼──── GND            │
+    │   DIN ◄─────┼──[330Ω]─┼──── D4 (GPIO2)    │
+    └─────────────┘         └────────────────────┘
+             │
+             │
+    ┌────────▼────────┐
+    │ 1000µF Capacitor│
+    │ (Across VCC/GND)│
+    └─────────────────┘
+
+
+### ⚠️ Important Notes
+
+- Common ground is required between ESP8266 and LED strip  
+- Add a 330–470Ω resistor on the data line  
+- Add a 1000µF capacitor across LED power terminals  
+- Use external 5V power for larger LED strips  
+- Consider a logic level shifter for long runs  
+
+---
+
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository
@@ -122,7 +166,7 @@ Common parameters you may want to tweak:
 
 ## 🖼️ Preview
 
-> *(Add screenshots or GIFs here for better engagement)*
+> *TODO(Add screenshots or GIFs here)*
 
 ---
 
@@ -157,9 +201,3 @@ Contributions are welcome. If you’d like to improve patterns, UI, or performan
 This project is licensed under the MIT License. See `LICENSE` for details.
 
 ---
-
-If you want, I can next:
-
-* Add a **wiring diagram section (with diagram)**
-* Generate a **GIF demo workflow**
-* Or tailor this specifically for **Home Assistant / IoT enthusiasts**, which gets a lot more traction on GitHub

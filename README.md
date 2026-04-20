@@ -1,75 +1,165 @@
 # FastLED Web Controller (ESP8266)
 
-A lightweight, web-based LED strip controller powered by ESP8266, FastLED, and AsyncWebServer. Control your LED patterns in real time through a responsive browser interface.
+![Platform](https://img.shields.io/badge/platform-ESP8266-blue)
+![Framework](https://img.shields.io/badge/framework-Arduino-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Features
+A lightweight, web-based LED strip controller built on ESP8266, FastLED, and AsyncWebServer. It provides a responsive browser interface for real-time control of LED animations, designed with performance, simplicity, and clean visuals in mind.
 
-* **Interactive Web UI** for selecting and controlling LED patterns
-* **Curated Pattern Set** with distinct, high-quality visual effects (no clutter or duplicates)
-* **Live Controls** for:
+---
+
+## ✨ Features
+
+* 🌐 **Responsive Web Interface** for pattern selection and live control
+* 🎨 **Curated Effects Library** — no redundant or low-quality animations
+* ⚡ **Real-Time Controls**
 
   * Brightness
   * Speed
   * Hue
   * Saturation
-* **Auto-Cycle Mode** to rotate through patterns automatically
-* **JSON API Endpoints** for integration and external control
-* **Modular Codebase** using Arduino tabs for better organization and maintainability
+* 🔁 **Auto-Cycle Mode** for hands-free animation playback
+* 🔌 **JSON API** for external integrations and automation
+* 🧩 **Modular Architecture** for easy extension and maintenance
 
-## Requirements
+---
+
+## 📦 Requirements
 
 ### Hardware
 
 * ESP8266 development board (e.g., NodeMCU, Wemos D1 Mini)
-* Addressable LED strip (e.g., WS2812B / NeoPixel)
-* Suitable power supply for your LED strip
-* USB cable for programming
+* Addressable LED strip (WS2812B / NeoPixel or compatible)
+* Adequate power supply (based on LED count)
+* USB cable for flashing
 
 ### Software
 
 * Arduino IDE (latest recommended)
-* ESP8266 board package installed in Arduino IDE
+* ESP8266 board support installed
 
-### Arduino Libraries
+### Libraries
 
-Install the following libraries via Library Manager:
+Install via Arduino Library Manager:
 
 * FastLED
 * ESPAsyncWebServer
 * ESP8266WiFi
 
-> Note: `ESPAsyncWebServer` may also require `ESPAsyncTCP` depending on your setup.
+> ℹ️ `ESPAsyncWebServer` may also require `ESPAsyncTCP` depending on your setup.
 
 ### Network
 
 * 2.4 GHz Wi-Fi network (ESP8266 does not support 5 GHz)
 
-## Project Structure
+---
 
-* `fastLED.ino` — Core setup, global state, and pattern implementations
-* `web_ui.ino` — Web interface and API route handling
-* `pattern_runner.ino` — Pattern dispatcher logic
-* `secrets.h` — Wi-Fi credentials (excluded from version control)
-* `secrets.example.h` — Template for credentials setup
+## 🚀 Getting Started
 
-## Getting Started
+### 1. Clone the Repository
 
-1. Install required libraries in the Arduino IDE
-2. Create your credentials file:
+```bash
+git clone https://github.com/vikhyat-sharma/fastled-web-controller.git
+cd fastled-web-controller
+```
 
-   * Copy `secrets.example.h` → `secrets.h`
-   * Add your Wi-Fi `ssid` and `password`
-3. Select your ESP8266 board and upload the code
-4. Open Serial Monitor to find the assigned IP address
-5. Enter the IP address in your browser
+### 2. Configure Wi-Fi Credentials
 
-## API Endpoints
+```cpp
+// secrets.h
+const char* ssid = "YOUR_WIFI";
+const char* password = "YOUR_PASSWORD";
+```
 
-* `GET /` — Web interface
-* `GET /json/status` — Current system state (JSON)
-* `GET /json/patterns` — List of available patterns
+* Copy `secrets.example.h` → `secrets.h`
+* Update credentials
 
-## Notes
+### 3. Upload to ESP8266
 
-* `secrets.h` is excluded from version control to protect sensitive information
-* Speed control is normalized to ensure consistent animation timing across all curated patterns
+* Select your board in Arduino IDE
+* Compile and upload
+
+### 4. Access the Web Interface
+
+* Open Serial Monitor (baud rate as configured)
+* Note the device IP address
+* Open it in your browser
+
+---
+
+## 🗂️ Project Structure
+
+```
+fastLED.ino          # Core setup, state, and patterns
+web_ui.ino           # Web UI + API routes
+pattern_runner.ino   # Pattern dispatch logic
+secrets.h            # Local credentials (ignored by git)
+secrets.example.h    # Template credentials file
+```
+
+---
+
+## 🔌 API Reference
+
+| Endpoint         | Method | Description                |
+| ---------------- | ------ | -------------------------- |
+| `/`              | GET    | Web interface              |
+| `/json/status`   | GET    | Current controller state   |
+| `/json/patterns` | GET    | List of available patterns |
+
+---
+
+## 🔧 Configuration
+
+Common parameters you may want to tweak:
+
+* LED pin and count
+* Default brightness
+* Pattern transition timing
+* Auto-cycle interval
+
+---
+
+## 🖼️ Preview
+
+> *(Add screenshots or GIFs here for better engagement)*
+
+---
+
+## 🛠️ Roadmap
+
+* [ ] Save presets
+* [ ] OTA firmware updates
+* [ ] Mobile UI improvements
+* [ ] MQTT / Home Assistant integration
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome. If you’d like to improve patterns, UI, or performance:
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+---
+
+## 🔒 Security
+
+* `secrets.h` is excluded from version control to protect credentials
+* Do not expose your device directly to the public internet without proper security
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
+
+---
+
+If you want, I can next:
+
+* Add a **wiring diagram section (with diagram)**
+* Generate a **GIF demo workflow**
+* Or tailor this specifically for **Home Assistant / IoT enthusiasts**, which gets a lot more traction on GitHub

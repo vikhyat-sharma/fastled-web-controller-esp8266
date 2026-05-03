@@ -4,32 +4,53 @@ String buildMainPageHtml() {
 <html>
 <head>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>ESP8266 FastLED Controller</title>
+  <title>FastLED Web Controller - Enhanced</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f2f5; padding: 16px; margin: 0; }
-    h2, h3 { color: #333; margin: 12px 0; }
-    .container { max-width: 700px; margin: auto; background: #fff; padding: 18px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .section { border-top: 1px solid #eee; padding-top: 12px; margin-top: 12px; }
-    .button { background-color: #4CAF50; border: none; color: white; padding: 10px 16px; margin: 5px; border-radius: 8px; font-size: 16px; cursor: pointer; }
-    .button:hover { background-color: #45a049; }
-    input[type=range], select { width: 85%; max-width: 420px; margin: 8px 0; padding: 8px; font-size: 15px; border-radius: 6px; border: 1px solid #ccc; }
-    input[type=submit] { padding: 8px 14px; font-size: 15px; border-radius: 6px; border: 1px solid #ccc; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; margin: 0; min-height: 100vh; }
+    h2, h3 { color: #fff; margin: 12px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    .container { max-width: 800px; margin: auto; background: rgba(255,255,255,0.95); padding: 24px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+    .section { border-top: 2px solid #667eea; padding-top: 16px; margin-top: 16px; }
+    .section:first-child { border-top: none; margin-top: 0; }
+    .button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 12px 24px; margin: 8px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+    .button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .button:active { transform: translateY(0); }
+    input[type=range] { width: 100%; max-width: 500px; margin: 12px 0; padding: 8px; font-size: 15px; border-radius: 6px; border: 2px solid #667eea; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; }
+    select { width: 95%; max-width: 500px; margin: 12px 0; padding: 10px; font-size: 15px; border-radius: 6px; border: 2px solid #667eea; background-color: white; cursor: pointer; }
+    input[type=submit] { padding: 10px 20px; font-size: 15px; border-radius: 6px; border: 2px solid #667eea; background-color: #f0f2f5; cursor: pointer; transition: all 0.2s; }
+    input[type=submit]:hover { background-color: #667eea; color: white; }
     form { margin-bottom: 20px; }
-    details { text-align: left; margin: 12px auto; max-width: 580px; }
-    summary { cursor: pointer; color: #1e5fbf; font-weight: bold; }
-    #patternList { margin-top: 8px; max-height: 260px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; padding: 8px; }
-    .pattern-item { padding: 6px 4px; border-bottom: 1px solid #ececec; font-size: 14px; }
+    details { text-align: left; margin: 16px auto; max-width: 650px; border-left: 4px solid #667eea; padding-left: 12px; }
+    summary { cursor: pointer; color: #667eea; font-weight: bold; padding: 8px; user-select: none; }
+    #patternList { margin-top: 12px; max-height: 350px; overflow-y: auto; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; padding: 12px; }
+    .pattern-item { padding: 10px; border-bottom: 1px solid #ececec; font-size: 14px; cursor: pointer; transition: background 0.2s; border-radius: 4px; }
+    .pattern-item:hover { background: #e8eef7; }
     .pattern-item:last-child { border-bottom: none; }
-    .color-picker-container { margin: 10px 0; padding: 10px; background: #1c1c1c; border-radius: 10px; display: inline-block; color: white; }
-    #colorPicker { width: 60px; height: 35px; margin-left: 10px; vertical-align: middle; }
-    .color-picker-container button { margin-left: 10px; padding: 6px 12px; border-radius: 5px; background-color: #444; color: white; border: none; cursor: pointer; }
-    .color-picker-container button:hover { background-color: #666; }
+    .color-picker-container { margin: 16px 0; padding: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border: 2px solid #667eea; display: inline-block; color: #333; }
+    #colorPicker { width: 100px; height: 50px; margin: 10px auto; border: 3px solid #667eea; border-radius: 8px; cursor: pointer; display: block; }
+    .color-picker-container button { margin: 10px 5px; padding: 10px 20px; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; font-weight: bold; }
+    .color-picker-container button:hover { transform: scale(1.05); }
+    .info-box { background: #e3f2fd; border-left: 4px solid #667eea; padding: 12px; margin: 12px 0; border-radius: 6px; text-align: left; font-size: 14px; }
+    .label-text { display: block; margin: 10px 0 5px 0; font-weight: bold; color: #333; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>ESP8266 FastLED Controller</h2>
-    <h3>Current Pattern: %CURRENT_PATTERN%</h3>
+    <h2>🎨 FastLED Web Controller</h2>
+    <h3>Current Pattern: <span style="color: #667eea;">%CURRENT_PATTERN%</span></h3>
+
+    <div class="section">
+      <h3>🎨 Color Picker (Works with All Patterns)</h3>
+      <div class="color-picker-container">
+        <label for="colorPicker" style="font-weight: bold;">Select Color:</label>
+        <input type="color" id="colorPicker" value="#ff0000">
+        <button onclick="sendColor()">Apply Color</button>
+        <button onclick="toggleColorMode()">Disable Color Override</button>
+      </div>
+      <div class="info-box">
+        💡 Select a color and click "Apply Color" to apply it to the current pattern. Use "Disable Color Override" to use pattern defaults.
+      </div>
+    </div>
 
     <div class="section">
       <h3>Pattern Selection</h3>
@@ -39,59 +60,56 @@ String buildMainPageHtml() {
       </form>
 
       <details id='allPatterns'>
-        <summary>Show all patterns (lazy loaded)</summary>
+        <summary>📋 Show all patterns (lazy loaded)</summary>
         <div id='patternList'>Tap to load list...</div>
       </details>
     </div>
 
     <div class="section">
-      <h3>Color Control</h3>
+      <h3>🎚️ Color Control (HSV)</h3>
       <form action='/hsv' method='GET'>
-        Hue: <input type='range' min='0' max='255' name='h' value='%HUE%'><br>
-        Saturation: <input type='range' min='0' max='255' name='s' value='%SAT%'><br>
-        Brightness: <input type='range' min='0' max='255' name='v' value='%BRIGHT%'><br>
-        <input type='submit' value='Set'>
+        <label class="label-text">Hue (0-255):</label>
+        <input type='range' min='0' max='255' name='h' value='%HUE%'><br>
+        <label class="label-text">Saturation (0-255):</label>
+        <input type='range' min='0' max='255' name='s' value='%SAT%'><br>
+        <label class="label-text">Brightness (0-255):</label>
+        <input type='range' min='0' max='255' name='v' value='%BRIGHT%'><br>
+        <input type='submit' value='Apply HSV'>
       </form>
     </div>
 
     <div class="section">
-      <h3>Animation Speed</h3>
+      <h3>⚡ Animation Speed</h3>
       <form action='/speed' method='GET'>
-        Speed (1-100): <input type='range' min='1' max='100' name='s' value='%SPEED%'><br>
-        <input type='submit' value='Set'>
+        <label class="label-text">Speed (1-100):</label>
+        <input type='range' min='1' max='100' name='s' value='%SPEED%'><br>
+        <input type='submit' value='Set Speed'>
       </form>
     </div>
 
     <div class="section">
-      <h3>Color Palette</h3>
+      <h3>🌈 Color Palette</h3>
       <form action='/palette' method='GET'>
         <select name='p'>
-          <option value='0'>Rainbow</option>
-          <option value='1'>Party</option>
-          <option value='2'>Ocean</option>
-          <option value='3'>Heat</option>
-          <option value='4'>Lava</option>
+          <option value='0'>🌈 Rainbow</option>
+          <option value='1'>🎉 Party</option>
+          <option value='2'>🌊 Ocean</option>
+          <option value='3'>🔥 Heat</option>
+          <option value='4'>🌋 Lava</option>
         </select><br>
-        <input type='submit' value='Set'>
+        <input type='submit' value='Set Palette'>
       </form>
     </div>
 
     <div class="section">
-      <h3>Auto Cycle</h3>
+      <h3>🔄 Auto Cycle</h3>
       <a href='/autocycle?state=%AUTO_STATE%'><button class='button'>%AUTO_TEXT%</button></a>
-    </div>
-
-    <div class="section">
-      <h3>Color Picker</h3>
-      <div class="color-picker-container">
-        <label for="colorPicker">Select Color:</label>
-        <input type="color" id="colorPicker" value="#ff0000">
-        <button onclick="sendColor()">Set Color</button>
-      </div>
     </div>
   </div>
 
   <script>
+    let colorOverrideEnabled = true;
+
     const detailsEl = document.getElementById('allPatterns');
     let loadedPatterns = false;
 
@@ -103,7 +121,23 @@ String buildMainPageHtml() {
 
       fetch(`/setColor?r=${r}&g=${g}&b=${b}`)
         .then(res => res.text())
-        .then(text => console.log("Color set:", text));
+        .then(text => {
+          colorOverrideEnabled = true;
+          console.log("Color applied:", text);
+          alert("Color applied! " + text);
+        })
+        .catch(err => alert("Error applying color: " + err));
+    }
+
+    function toggleColorMode() {
+      fetch('/toggleColorMode')
+        .then(res => res.text())
+        .then(text => {
+          colorOverrideEnabled = false;
+          console.log("Color override disabled:", text);
+          alert("Color override disabled. Patterns will use their default colors.");
+        })
+        .catch(err => alert("Error: " + err));
     }
 
     detailsEl.addEventListener('toggle', () => {
@@ -121,6 +155,9 @@ String buildMainPageHtml() {
             const row = document.createElement('div');
             row.className = 'pattern-item';
             row.textContent = `${index}. ${name}`;
+            row.onclick = () => {
+              window.location.href = `/pattern?index=${index}`;
+            };
             list.appendChild(row);
           });
         })
@@ -149,7 +186,7 @@ String buildMainPageHtml() {
   html.replace("%BRIGHT%", String(gBrightness));
   html.replace("%SPEED%", String(gSpeed));
   html.replace("%AUTO_STATE%", String(!autoCycle));
-  html.replace("%AUTO_TEXT%", autoCycle ? "Disable" : "Enable");
+  html.replace("%AUTO_TEXT%", autoCycle ? "Disable AutoCycle" : "Enable AutoCycle");
 
   return html;
 }
@@ -161,17 +198,23 @@ void setupWebServer() {
 
   server.on("/setColor", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (request->hasParam("r") && request->hasParam("g") && request->hasParam("b")) {
-      customColorR = request->getParam("r")->value().toInt();
-      customColorG = request->getParam("g")->value().toInt();
-      customColorB = request->getParam("b")->value().toInt();
+      uint8_t r = request->getParam("r")->value().toInt();
+      uint8_t g = request->getParam("g")->value().toInt();
+      uint8_t b = request->getParam("b")->value().toInt();
+      
+      setColorPickerColor(r, g, b);
+      fill_solid(leds, NUM_LEDS, CRGB(r, g, b));
+      FastLED.show();
 
-      Serial.printf("Custom color set: R=%d, G=%d, B=%d\n", customColorR, customColorG, customColorB);
-      fill_solid(leds, NUM_LEDS, CRGB(customColorR, customColorG, customColorB));
-
-      request->send(200, "text/plain", "Color received");
+      request->send(200, "text/plain", "Color received and applied!");
     } else {
       request->send(400, "text/plain", "Missing parameters");
     }
+  });
+
+  server.on("/toggleColorMode", HTTP_GET, [](AsyncWebServerRequest *request) {
+    useColorPickerOverride = false;
+    request->send(200, "text/plain", "Color override disabled");
   });
 
   server.on("/pattern", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -179,6 +222,7 @@ void setupWebServer() {
       int requestedPattern = request->getParam("index")->value().toInt();
       if (requestedPattern >= 0 && requestedPattern < TOTAL_PATTERNS) {
         currentPattern = requestedPattern;
+        lastChange = millis();
       }
     }
     request->redirect("/");
@@ -225,7 +269,8 @@ void setupWebServer() {
     json += "\"hue\":" + String(gHue) + ",";
     json += "\"saturation\":" + String(gSat) + ",";
     json += "\"brightness\":" + String(gBrightness) + ",";
-    json += "\"autoCycle\":" + String(autoCycle);
+    json += "\"autoCycle\":" + String(autoCycle) + ",";
+    json += "\"colorOverride\":" + String(useColorPickerOverride);
     json += "}";
     request->send(200, "application/json", json);
   });

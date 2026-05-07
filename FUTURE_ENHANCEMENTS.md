@@ -471,5 +471,4 @@ void yourPatternName() {
 ---
 
 **Last Updated:** May 2026  
-**Version:** 1.0  
-**Maintainer:** FastLED Community
+**Version:** 1.0

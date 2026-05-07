@@ -414,5 +414,4 @@ See [FUTURE_ENHANCEMENTS.md](FUTURE_ENHANCEMENTS.md) for roadmap and development
 
 **Version:** 2.0  
 **Last Updated:** May 2026  
-**Author:** FastLED Community  
 **Status:** ✅ Production Ready

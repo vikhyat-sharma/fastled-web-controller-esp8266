@@ -91,6 +91,9 @@ const char *patternNames[] = {
   "Shimmer Curtain",
   "Pastel Twinkle",
   "Falling Stars"
+  ,"Sine Spiral"
+  ,"Color Tunnel"
+  ,"Meteor Shower"
 };
 
 const int TOTAL_PATTERNS = sizeof(patternNames) / sizeof(patternNames[0]);

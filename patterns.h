@@ -600,4 +600,51 @@ void fallingStars() {
   leds[pos] = CHSV(0, 0, 255);
 }
 
+// ============================================================
+// NEW: Additional Unique Patterns
+// ============================================================
+
+void sineSpiral() {
+  static uint16_t t = 0;
+  t += 2;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t angle = sin8(i * 3 + t / 2);
+    uint8_t hue = (gHue + i * 6 + angle) & 0xFF;
+    uint8_t val = sin8(i * 4 + t / 3);
+    leds[i] = CHSV(hue, gSat, val);
+  }
+  gHue++;
+  showFrame(18);
+}
+
+void colorTunnel() {
+  static uint16_t offset = 0;
+  offset += 4;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t p = (i * 10 + offset) & 0xFF;
+    leds[i] = CHSV(p, 200, 255 - (i % 20));
+  }
+  showFrame(14);
+}
+
+void meteorShower() {
+  static int pos = 0;
+  static int dir = 1;
+  fadeToBlackBy(leds, NUM_LEDS, 64);
+  int tail = 8;
+  for (int i = 0; i < tail; i++) {
+    int idx = pos - i * dir;
+    if (idx >= 0 && idx < NUM_LEDS) {
+      leds[idx] = CHSV(gHue + i * 4, 255, 255 - i * 28);
+    }
+  }
+  pos += dir;
+  if (pos >= NUM_LEDS || pos < 0) {
+    dir = -dir;
+    pos = constrain(pos, 0, NUM_LEDS - 1);
+  }
+  gHue++;
+  showFrame(12);
+}
+
 #endif

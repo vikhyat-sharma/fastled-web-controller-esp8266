@@ -80,6 +80,9 @@ void runCurrentPattern() {
     case 58: shimmerCurtain(); break;
     case 59: pastelTwinkle(); break;
     case 60: fallingStars(); break;
+    case 61: sineSpiral(); break;
+    case 62: colorTunnel(); break;
+    case 63: meteorShower(); break;
     
     default: rainbowCycle(); break;
   }

@@ -43,7 +43,7 @@ String buildMainPageHtml() {
       <h3>🎨 Color Picker (Works with All Patterns)</h3>
       <div class="color-picker-container">
         <label for="colorPicker" style="font-weight: bold;">Select Color:</label>
-        <input type="color" id="colorPicker" value="#ff0000">
+        <input type="color" id="colorPicker" value="#0f0000">
         <button onclick="sendColor()">Apply Color</button>
         <button onclick="toggleColorMode()">Disable Color Override</button>
       </div>
@@ -104,6 +104,18 @@ String buildMainPageHtml() {
     <div class="section">
       <h3>🔄 Auto Cycle</h3>
       <a href='/autocycle?state=%AUTO_STATE%'><button class='button'>%AUTO_TEXT%</button></a>
+    </div>
+
+    <div class="section">
+      <h3>🔧 Update WiFi Credentials</h3>
+      <form action='/wifi/update' method='GET'>
+        <label class="label-text">SSID:</label>
+        <input type='text' name='ssid' placeholder='New SSID' style='width:90%;padding:8px;border-radius:6px;border:2px solid #667eea;'><br>
+        <label class="label-text">Password:</label>
+        <input type='password' name='pw' placeholder='New Password' style='width:90%;padding:8px;border-radius:6px;border:2px solid #667eea;'><br>
+        <input type='submit' value='Save & Reboot'>
+      </form>
+      <div class="info-box">Updating will save credentials to EEPROM and reboot the device.</div>
     </div>
   </div>
 
@@ -192,6 +204,7 @@ String buildMainPageHtml() {
 }
 
 void setupWebServer() {
+  extern bool saveWifiToEEPROM(const String &newSsid, const String &newPassword);
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", buildMainPageHtml());
   });
@@ -229,10 +242,10 @@ void setupWebServer() {
   });
 
   server.on("/hsv", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("h")) gHue = request->getParam("h")->value().toInt();
-    if (request->hasParam("s")) gSat = request->getParam("s")->value().toInt();
+    if (request->hasParam("h")) gHue = constrain(request->getParam("h")->value().toInt(), 0, 255);
+    if (request->hasParam("s")) gSat = constrain(request->getParam("s")->value().toInt(), 0, 255);
     if (request->hasParam("v")) {
-      gBrightness = request->getParam("v")->value().toInt();
+      gBrightness = constrain(request->getParam("v")->value().toInt(), 0, 255);
       FastLED.setBrightness(gBrightness);
     }
     request->redirect("/");
@@ -250,7 +263,7 @@ void setupWebServer() {
 
   server.on("/brightness", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (request->hasParam("b")) {
-      gBrightness = request->getParam("b")->value().toInt();
+      gBrightness = constrain(request->getParam("b")->value().toInt(), 0, 255);
       FastLED.setBrightness(gBrightness);
     }
     request->redirect("/");
@@ -258,7 +271,7 @@ void setupWebServer() {
 
   server.on("/speed", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (request->hasParam("s")) {
-      gSpeed = request->getParam("s")->value().toInt();
+      gSpeed = constrain(request->getParam("s")->value().toInt(), 1, 100);
     }
     request->redirect("/");
   });
@@ -301,6 +314,27 @@ void setupWebServer() {
       }
     }
     request->redirect("/");
+  });
+
+  server.on("/wifi/update", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (request->hasParam("ssid") && request->hasParam("pw")) {
+      String ns = request->getParam("ssid")->value();
+      String pw = request->getParam("pw")->value();
+      if (ns.length() == 0) {
+        request->send(400, "text/plain", "SSID cannot be empty");
+        return;
+      }
+      bool ok = saveWifiToEEPROM(ns, pw);
+      if (ok) {
+        request->send(200, "text/plain", "Saved credentials, rebooting...");
+        delay(500);
+        ESP.restart();
+      } else {
+        request->send(500, "text/plain", "Failed to save credentials");
+      }
+    } else {
+      request->send(400, "text/plain", "Missing ssid or pw");
+    }
   });
 
   server.begin();

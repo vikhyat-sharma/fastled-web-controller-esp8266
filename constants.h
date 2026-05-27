@@ -94,6 +94,9 @@ const char *patternNames[] = {
   ,"Sine Spiral"
   ,"Color Tunnel"
   ,"Meteor Shower"
+  ,"Quantum Vortex"
+  ,"Alien Aurora"
+  ,"Hypernova Burst"
 };
 
 const int TOTAL_PATTERNS = sizeof(patternNames) / sizeof(patternNames[0]);

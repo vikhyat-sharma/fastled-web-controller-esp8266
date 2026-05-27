@@ -648,3 +648,40 @@ void meteorShower() {
 }
 
 #endif
+// ============================================================
+// OUT OF THE WORLD PATTERNS
+// ============================================================
+
+void quantumVortex() {
+  static uint16_t t = 0;
+  t += 3;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t v = sin8(i * 7 + t) ^ cos8(i * 13 - t / 2);
+    uint8_t h = (gHue + i * 5 + t / 3) & 0xFF;
+    leds[i] = CHSV(h, 255, v);
+  }
+  gHue++;
+  showFrame(14);
+}
+
+void alienAurora() {
+  static uint16_t t = 0;
+  t += 2;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t n = inoise8(i * 18, t);
+    leds[i] = CHSV(120 + n / 3, 255 - n, n);
+  }
+  showFrame(18);
+}
+
+void hypernovaBurst() {
+  static uint16_t t = 0;
+  t += 4;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t burst = sin8(i * 8 + t) * cos8(i * 5 - t / 2);
+    uint8_t h = (gHue + burst) & 0xFF;
+    leds[i] = CHSV(h, 255, abs(burst));
+  }
+  gHue += 2;
+  showFrame(12);
+}

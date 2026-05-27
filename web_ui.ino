@@ -6,32 +6,39 @@ String buildMainPageHtml() {
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <title>FastLED Web Controller - Enhanced</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; margin: 0; min-height: 100vh; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 8px; margin: 0; min-height: 100vh; }
     h2, h3 { color: #fff; margin: 12px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-    .container { max-width: 800px; margin: auto; background: rgba(255,255,255,0.95); padding: 24px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-    .section { border-top: 2px solid #667eea; padding-top: 16px; margin-top: 16px; }
+    .container { max-width: 98vw; margin: auto; background: rgba(255,255,255,0.97); padding: 2vw 2vw 2vw 2vw; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+    .section { border-top: 2px solid #667eea; padding-top: 4vw; margin-top: 4vw; }
     .section:first-child { border-top: none; margin-top: 0; }
-    .button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 12px 24px; margin: 8px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
-    .button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
-    .button:active { transform: translateY(0); }
-    input[type=range] { width: 100%; max-width: 500px; margin: 12px 0; padding: 8px; font-size: 15px; border-radius: 6px; border: 2px solid #667eea; cursor: pointer; }
+    .button, input[type=submit] { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 4vw 6vw; margin: 2vw; border-radius: 8px; font-size: 5vw; font-weight: bold; cursor: pointer; transition: transform 0.2s; min-width: 40vw; }
+    .button:hover, input[type=submit]:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .button:active, input[type=submit]:active { transform: translateY(0); }
+    input[type=range] { width: 100%; max-width: 95vw; margin: 4vw 0; padding: 2vw; font-size: 4vw; border-radius: 6px; border: 2px solid #667eea; cursor: pointer; }
     input[type=range]::-webkit-slider-thumb { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; }
-    select { width: 95%; max-width: 500px; margin: 12px 0; padding: 10px; font-size: 15px; border-radius: 6px; border: 2px solid #667eea; background-color: white; cursor: pointer; }
-    input[type=submit] { padding: 10px 20px; font-size: 15px; border-radius: 6px; border: 2px solid #667eea; background-color: #f0f2f5; cursor: pointer; transition: all 0.2s; }
-    input[type=submit]:hover { background-color: #667eea; color: white; }
-    form { margin-bottom: 20px; }
-    details { text-align: left; margin: 16px auto; max-width: 650px; border-left: 4px solid #667eea; padding-left: 12px; }
-    summary { cursor: pointer; color: #667eea; font-weight: bold; padding: 8px; user-select: none; }
-    #patternList { margin-top: 12px; max-height: 350px; overflow-y: auto; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; padding: 12px; }
-    .pattern-item { padding: 10px; border-bottom: 1px solid #ececec; font-size: 14px; cursor: pointer; transition: background 0.2s; border-radius: 4px; }
+    select { width: 98vw; max-width: 98vw; margin: 4vw 0; padding: 3vw; font-size: 4vw; border-radius: 6px; border: 2px solid #667eea; background-color: white; cursor: pointer; }
+    form { margin-bottom: 4vw; }
+    details { text-align: left; margin: 4vw auto; max-width: 98vw; border-left: 4px solid #667eea; padding-left: 3vw; }
+    summary { cursor: pointer; color: #667eea; font-weight: bold; padding: 2vw; user-select: none; font-size: 4vw; }
+    #patternList { margin-top: 4vw; max-height: 60vw; overflow-y: auto; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; padding: 3vw; }
+    .pattern-item { padding: 3vw; border-bottom: 1px solid #ececec; font-size: 4vw; cursor: pointer; transition: background 0.2s; border-radius: 4px; }
     .pattern-item:hover { background: #e8eef7; }
     .pattern-item:last-child { border-bottom: none; }
-    .color-picker-container { margin: 16px 0; padding: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border: 2px solid #667eea; display: inline-block; color: #333; }
-    #colorPicker { width: 100px; height: 50px; margin: 10px auto; border: 3px solid #667eea; border-radius: 8px; cursor: pointer; display: block; }
-    .color-picker-container button { margin: 10px 5px; padding: 10px 20px; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; font-weight: bold; }
+    .color-picker-container { margin: 4vw 0; padding: 4vw; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border: 2px solid #667eea; display: inline-block; color: #333; width: 90vw; }
+    #colorPicker { width: 80vw; height: 10vw; margin: 2vw auto; border: 3px solid #667eea; border-radius: 8px; cursor: pointer; display: block; }
+    .color-picker-container button { margin: 2vw 2vw; padding: 3vw 6vw; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; font-weight: bold; font-size: 4vw; }
     .color-picker-container button:hover { transform: scale(1.05); }
-    .info-box { background: #e3f2fd; border-left: 4px solid #667eea; padding: 12px; margin: 12px 0; border-radius: 6px; text-align: left; font-size: 14px; }
-    .label-text { display: block; margin: 10px 0 5px 0; font-weight: bold; color: #333; }
+    .info-box { background: #e3f2fd; border-left: 4px solid #667eea; padding: 3vw; margin: 3vw 0; border-radius: 6px; text-align: left; font-size: 3vw; }
+    .label-text { display: block; margin: 3vw 0 2vw 0; font-weight: bold; color: #333; font-size: 4vw; }
+    @media (min-width: 600px) {
+      .container { max-width: 800px; padding: 24px; }
+      .button, input[type=submit] { font-size: 16px; min-width: 120px; padding: 12px 24px; }
+      select, input[type=range] { font-size: 15px; }
+      .pattern-item, .label-text, summary { font-size: 16px; }
+      .info-box { font-size: 14px; }
+      #colorPicker { width: 100px; height: 50px; }
+      .color-picker-container { width: auto; }
+    }
   </style>
 </head>
 <body>
@@ -46,24 +53,129 @@ String buildMainPageHtml() {
         <input type="color" id="colorPicker" value="#0f0000">
         <button onclick="sendColor()">Apply Color</button>
         <button onclick="toggleColorMode()">Disable Color Override</button>
+        <button type="button" id="favColorBtn" style="margin-left:2vw;">★ Favorite Color</button>
+        <div id="colorFavoritesBar" style="margin:2vw 0;display:flex;flex-wrap:wrap;justify-content:center;"></div>
+        <div id="colorHistoryBar" style="margin-top:2vw;display:flex;flex-wrap:wrap;justify-content:center;"></div>
+          // Color favorites logic (localStorage)
+          const COLOR_FAV_KEY = 'fastled_fav_colors';
+          function getFavColors() {
+            try { return JSON.parse(localStorage.getItem(COLOR_FAV_KEY)) || []; } catch { return []; }
+          }
+          function saveFavColors(favs) {
+            localStorage.setItem(COLOR_FAV_KEY, JSON.stringify(favs.slice(0, 10)));
+          }
+          function toggleFavColor(hex) {
+            let favs = getFavColors();
+            if (favs.includes(hex)) {
+              favs = favs.filter(c => c !== hex);
+            } else {
+              favs.unshift(hex);
+            }
+            saveFavColors(favs);
+            renderFavColors();
+          }
+          function renderFavColors() {
+            const favs = getFavColors();
+            const bar = document.getElementById('colorFavoritesBar');
+            bar.innerHTML = '';
+            if (favs.length === 0) {
+              bar.innerHTML = '<span style="color:#888;font-size:3vw;">No favorite colors yet.</span>';
+              return;
+            }
+            favs.forEach(hex => {
+              const swatch = document.createElement('div');
+              swatch.style.background = hex;
+              swatch.style.width = '36px';
+              swatch.style.height = '36px';
+              swatch.style.margin = '2px';
+              swatch.style.border = '3px solid gold';
+              swatch.style.borderRadius = '8px';
+              swatch.style.cursor = 'pointer';
+              swatch.title = hex + ' (favorite)';
+              swatch.onclick = () => {
+                document.getElementById('colorPicker').value = hex;
+              };
+              bar.appendChild(swatch);
+            });
+          }
+          window.addEventListener('DOMContentLoaded', () => {
+            renderFavColors();
+            document.getElementById('favColorBtn').onclick = function() {
+              const hex = document.getElementById('colorPicker').value;
+              toggleFavColor(hex);
+            };
+          });
       </div>
       <div class="info-box">
-        💡 Select a color and click "Apply Color" to apply it to the current pattern. Use "Disable Color Override" to use pattern defaults.
+        💡 Select a color and click "Apply Color" to apply it to the current pattern. Use "Disable Color Override" to use pattern defaults.<br>
+        Tap a color below to reuse it:
+        <span id="colorHistoryHint"></span>
       </div>
     </div>
 
     <div class="section">
       <h3>Pattern Selection</h3>
-      <form action='/pattern' method='GET'>
+      <form action='/pattern' method='GET' style="margin-bottom:2vw;">
         <select id='patternSelect' name='index'>%PATTERN_OPTIONS%</select><br>
         <input type='submit' value='Apply Pattern'>
+        <button type="button" id="favPatternBtn" style="margin-left:2vw;">★ Favorite</button>
       </form>
+      <div id="favoritePatternsBar" style="margin-bottom:2vw;"></div>
 
       <details id='allPatterns'>
         <summary>📋 Show all patterns (lazy loaded)</summary>
         <div id='patternList'>Tap to load list...</div>
       </details>
     </div>
+    // Pattern favorites logic (localStorage)
+    const PATTERN_FAV_KEY = 'fastled_fav_patterns';
+    function getFavPatterns() {
+      try { return JSON.parse(localStorage.getItem(PATTERN_FAV_KEY)) || []; } catch { return []; }
+    }
+    function saveFavPatterns(favs) {
+      localStorage.setItem(PATTERN_FAV_KEY, JSON.stringify(favs));
+    }
+    function toggleFavPattern(idx) {
+      let favs = getFavPatterns();
+      if (favs.includes(idx)) {
+        favs = favs.filter(i => i !== idx);
+      } else {
+        favs.push(idx);
+      }
+      saveFavPatterns(favs);
+      renderFavPatterns();
+    }
+    function renderFavPatterns() {
+      const favs = getFavPatterns();
+      const bar = document.getElementById('favoritePatternsBar');
+      bar.innerHTML = '';
+      if (favs.length === 0) {
+        bar.innerHTML = '<span style="color:#888;font-size:3vw;">No favorites yet. Mark patterns as favorites for quick access!</span>';
+        return;
+      }
+      favs.forEach(idx => {
+        const btn = document.createElement('button');
+        btn.className = 'button';
+        btn.style.background = 'linear-gradient(135deg,#ffd700 0%,#ffb300 100%)';
+        btn.style.color = '#333';
+        btn.style.fontWeight = 'bold';
+        btn.style.fontSize = '4vw';
+        btn.textContent = '★ ' + patternNames[idx];
+        btn.onclick = () => {
+          document.getElementById('patternSelect').value = idx;
+          document.querySelector('form[action="/pattern"]').submit();
+        };
+        bar.appendChild(btn);
+      });
+    }
+    // Favorite button logic
+    window.addEventListener('DOMContentLoaded', () => {
+      renderFavPatterns();
+      document.getElementById('favPatternBtn').onclick = function() {
+        const idx = parseInt(document.getElementById('patternSelect').value);
+        toggleFavPattern(idx);
+      };
+    });
 
     <div class="section">
       <h3>🎚️ Color Control (HSV)</h3>
@@ -125,6 +237,45 @@ String buildMainPageHtml() {
     const detailsEl = document.getElementById('allPatterns');
     let loadedPatterns = false;
 
+
+    // Color history logic
+    const COLOR_HISTORY_KEY = 'fastled_color_history';
+    function getColorHistory() {
+      try {
+        return JSON.parse(localStorage.getItem(COLOR_HISTORY_KEY)) || [];
+      } catch { return []; }
+    }
+    function saveColorHistory(hist) {
+      localStorage.setItem(COLOR_HISTORY_KEY, JSON.stringify(hist.slice(0, 12)));
+    }
+    function addColorToHistory(hex) {
+      let hist = getColorHistory();
+      hist = hist.filter(c => c !== hex);
+      hist.unshift(hex);
+      saveColorHistory(hist);
+      renderColorHistory();
+    }
+    function renderColorHistory() {
+      const hist = getColorHistory();
+      const bar = document.getElementById('colorHistoryBar');
+      bar.innerHTML = '';
+      hist.forEach(hex => {
+        const swatch = document.createElement('div');
+        swatch.style.background = hex;
+        swatch.style.width = '32px';
+        swatch.style.height = '32px';
+        swatch.style.margin = '2px';
+        swatch.style.border = '2px solid #667eea';
+        swatch.style.borderRadius = '6px';
+        swatch.style.cursor = 'pointer';
+        swatch.title = hex;
+        swatch.onclick = () => {
+          document.getElementById('colorPicker').value = hex;
+        };
+        bar.appendChild(swatch);
+      });
+    }
+
     function sendColor() {
       const color = document.getElementById('colorPicker').value;
       const r = parseInt(color.substr(1, 2), 16);
@@ -135,11 +286,15 @@ String buildMainPageHtml() {
         .then(res => res.text())
         .then(text => {
           colorOverrideEnabled = true;
+          addColorToHistory(color);
           console.log("Color applied:", text);
           alert("Color applied! " + text);
         })
         .catch(err => alert("Error applying color: " + err));
     }
+
+    // On load, render color history
+    window.addEventListener('DOMContentLoaded', renderColorHistory);
 
     function toggleColorMode() {
       fetch('/toggleColorMode')

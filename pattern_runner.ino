@@ -83,6 +83,9 @@ void runCurrentPattern() {
     case 61: sineSpiral(); break;
     case 62: colorTunnel(); break;
     case 63: meteorShower(); break;
+    case 64: quantumVortex(); break;
+    case 65: alienAurora(); break;
+    case 66: hypernovaBurst(); break;
     
     default: rainbowCycle(); break;
   }

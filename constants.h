@@ -97,6 +97,18 @@ const char *patternNames[] = {
   ,"Quantum Vortex"
   ,"Alien Aurora"
   ,"Hypernova Burst"
+
+  // Holiday & Seasonal
+  ,"Christmas Snowflakes"
+  ,"Christmas Lights"
+  ,"Halloween Ghosts"
+  ,"Halloween Pumpkin"
+  ,"Easter Pastel Eggs"
+  ,"New Year Fireworks"
+  ,"Diwali Diyas"
+  ,"St Patricks Shamrock"
+  ,"Valentines Heartbeat"
+  ,"Fourth Of July"
 };
 
 const int TOTAL_PATTERNS = sizeof(patternNames) / sizeof(patternNames[0]);

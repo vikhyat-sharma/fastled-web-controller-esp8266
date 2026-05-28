@@ -86,6 +86,18 @@ void runCurrentPattern() {
     case 64: quantumVortex(); break;
     case 65: alienAurora(); break;
     case 66: hypernovaBurst(); break;
+
+    // Holiday & Seasonal (67-76)
+    case 67: christmasSnowflakes(); break;
+    case 68: christmasLights(); break;
+    case 69: halloweenGhosts(); break;
+    case 70: halloweenPumpkin(); break;
+    case 71: easterPastelEggs(); break;
+    case 72: newYearFireworks(); break;
+    case 73: diwaliDiyas(); break;
+    case 74: stPatricksShamrock(); break;
+    case 75: valentinesHeartbeat(); break;
+    case 76: fourthOfJuly(); break;
     
     default: rainbowCycle(); break;
   }

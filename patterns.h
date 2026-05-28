@@ -601,6 +601,150 @@ void fallingStars() {
 }
 
 // ============================================================
+// CATEGORY: Holiday & Seasonal Patterns
+// ============================================================
+
+void christmasSnowflakes() {
+  fadeToBlackBy(leds, NUM_LEDS, 30);
+  for (int i = 0; i < NUM_LEDS; i += 10) {
+    leds[i] = CHSV(160, 200, 50);
+  }
+  if (random8() < 55) {
+    int pos = random16(NUM_LEDS);
+    leds[pos] = CRGB::White;
+    if (pos > 0) leds[pos - 1] = CHSV(160, 80, 140);
+    if (pos < NUM_LEDS - 1) leds[pos + 1] = CHSV(160, 80, 140);
+  }
+  showFrame(28);
+}
+
+void christmasLights() {
+  static uint8_t phase = 0;
+  phase++;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t hue = ((i / 4 + phase / 8) % 2) ? 0 : 96;
+    uint8_t val = sin8(i * 20 + phase * 3) / 2 + 128;
+    leds[i] = CHSV(hue, 255, val);
+  }
+  if (random8() < 30) {
+    leds[random16(NUM_LEDS)] = CHSV(40, 200, 255);
+  }
+  showFrame(22);
+}
+
+void halloweenGhosts() {
+  static int ghostPos = NUM_LEDS / 2;
+  static int ghostDir = 1;
+  fadeToBlackBy(leds, NUM_LEDS, 35);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV(192, 255, 35);
+  }
+  for (int g = -6; g <= 6; g++) {
+    int idx = ghostPos + g;
+    if (idx >= 0 && idx < NUM_LEDS) {
+      leds[idx] = CHSV(192, 0, 255 - abs(g) * 35);
+    }
+  }
+  ghostPos += ghostDir;
+  if (ghostPos >= NUM_LEDS - 4 || ghostPos <= 4) {
+    ghostDir = -ghostDir;
+  }
+  showFrame(18);
+}
+
+void halloweenPumpkin() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV(24, 255, random8(160, 255));
+  }
+  if (random8() < 18) {
+    leds[random16(NUM_LEDS)] = CHSV(192, 255, 200);
+  }
+  showFrame(32);
+}
+
+void easterPastelEggs() {
+  static uint8_t shift = 0;
+  shift += 2;
+  const uint8_t pastelHues[] = {224, 160, 96, 64, 200};
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t band = (i / 8 + shift / 4) % 5;
+    uint8_t val = sin8(i * 6 + shift) / 2 + 128;
+    leds[i] = CHSV(pastelHues[band], 120, val);
+  }
+  showFrame(24);
+}
+
+void newYearFireworks() {
+  fadeToBlackBy(leds, NUM_LEDS, 50);
+  if (random8() < 28) {
+    int center = random16(NUM_LEDS);
+    uint8_t hue = random8();
+    for (int d = -7; d <= 7; d++) {
+      int idx = center + d;
+      if (idx >= 0 && idx < NUM_LEDS) {
+        leds[idx] = CHSV(hue, 255, 255 - abs(d) * 32);
+      }
+    }
+  }
+  showFrame(20);
+}
+
+void diwaliDiyas() {
+  fadeToBlackBy(leds, NUM_LEDS, 35);
+  for (int i = 0; i < NUM_LEDS; i += 14) {
+    uint8_t flicker = inoise8(i * 50, millis() / 4) / 2 + 128;
+    for (int j = 0; j < 4 && i + j < NUM_LEDS; j++) {
+      leds[i + j] = CHSV(20, 255, flicker - j * 45);
+    }
+  }
+  if (random8() < 45) {
+    leds[random16(NUM_LEDS)] = CHSV(40, 255, 255);
+  }
+  showFrame(26);
+}
+
+void stPatricksShamrock() {
+  static uint8_t wave = 0;
+  wave += 4;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV(96, 255, sin8(i * 10 + wave));
+  }
+  if (random8() < 22) {
+    leds[random16(NUM_LEDS)] = CHSV(64, 200, 255);
+  }
+  showFrame(20);
+}
+
+void valentinesHeartbeat() {
+  static uint8_t beat = 80;
+  static int8_t delta = 10;
+  beat += delta;
+  if (beat >= 230 || beat <= 25) {
+    delta = -delta;
+  }
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV(224, 180, beat);
+  }
+  showFrame(16);
+}
+
+void fourthOfJuly() {
+  static uint8_t phase = 0;
+  phase++;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t stripe = (i * 3 / NUM_LEDS + phase / 24) % 3;
+    if (stripe == 0) {
+      leds[i] = CHSV(0, 255, 255);
+    } else if (stripe == 1) {
+      leds[i] = CHSV(0, 0, 255);
+    } else {
+      leds[i] = CHSV(160, 255, 255);
+    }
+  }
+  showFrame(25);
+}
+
+// ============================================================
 // NEW: Additional Unique Patterns
 // ============================================================
 
@@ -647,7 +791,6 @@ void meteorShower() {
   showFrame(12);
 }
 
-#endif
 // ============================================================
 // OUT OF THE WORLD PATTERNS
 // ============================================================
@@ -685,3 +828,5 @@ void hypernovaBurst() {
   gHue += 2;
   showFrame(12);
 }
+
+#endif

@@ -413,10 +413,32 @@ void yourPatternName() {
 4. Error handling & logging system
 
 ### Phase 2 (Short-term) - Medium Difficulty
-1. Configuration storage (SPIFFS)
-2. PWA implementation
-3. Advanced color picker features
-4. Holiday/seasonal patterns
+
+1. Persistent Configuration Storage (LittleFS/JSON)
+  - Store user favorites, color palettes, speed presets, and last-used settings in flash using LittleFS and a JSON config file.
+  - Add a settings page to view/edit/reset configuration.
+  - Migrate localStorage favorites to persistent config for cross-device use.
+
+2. Progressive Web App (PWA) Support
+  - Add manifest.json and service worker for offline use and installability.
+  - Enable "Add to Home Screen" and caching of static assets.
+  - Show install prompt and PWA status in the UI.
+
+3. Advanced Color Picker Features
+  - Add a palette editor for custom gradients and palette saving.
+  - Add color harmony tools (complementary, triadic, analogous suggestions).
+  - Allow direct RGB/HSV value entry and toggling.
+  - Optionally: eyedropper tool for picking from preview/LEDs.
+
+4. Holiday & Seasonal Patterns Expansion
+  - Add/organize patterns for Christmas (snowflakes, candy canes), Halloween (ghosts, pumpkins), Diwali (diyas, fireworks), Easter (eggs, pastels), New Year (fireworks, champagne), etc.
+  - Group festive patterns in UI for quick access.
+  - Allow scheduling/auto-cycling of seasonal effects.
+
+5. Pattern Library Review & Cleanup
+  - Review all patterns for visual uniqueness; remove or merge near-duplicates (e.g., shimmer, pastel twinkle, sparkle).
+  - Add tags/metadata for each pattern (category, season, effect type).
+  - Document removed/replaced patterns in UPGRADE_SUMMARY.md.
 
 ### Phase 3 (Medium-term) - High Difficulty
 1. Sound-reactive effects

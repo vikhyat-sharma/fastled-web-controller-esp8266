@@ -745,6 +745,200 @@ void fourthOfJuly() {
 }
 
 // ============================================================
+// CATEGORY: Indian Festivals & Seasons
+// ============================================================
+
+void holiColorSplash() {
+  fadeToBlackBy(leds, NUM_LEDS, 40);
+  if (random8() < 45) {
+    int center = random16(NUM_LEDS);
+    uint8_t hue = random8();
+    for (int d = -5; d <= 5; d++) {
+      int idx = center + d;
+      if (idx >= 0 && idx < NUM_LEDS) {
+        leds[idx] = CHSV(hue, 255, 255 - abs(d) * 40);
+      }
+    }
+  }
+  for (int i = 0; i < NUM_LEDS; i += 6) {
+    leds[i].fadeToBlackBy(10);
+    leds[i] += CHSV((i * 17 + millis() / 20) % 255, 255, 30);
+  }
+  showFrame(18);
+}
+
+void navratriGarba() {
+  static uint8_t spin = 0;
+  spin += 5;
+  const uint8_t navHues[] = {0, 24, 48, 72, 96, 128, 160, 192, 224};
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t colorIdx = (i / 6 + spin / 12) % 9;
+    uint8_t val = sin8(i * 14 + spin * 2) / 2 + 140;
+    leds[i] = CHSV(navHues[colorIdx], 255, val);
+  }
+  showFrame(16);
+}
+
+void rakhiCelebration() {
+  static uint8_t phase = 0;
+  phase += 3;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    bool band = ((i + phase) / 5) % 3 == 0;
+    if (band) {
+      leds[i] = CHSV(0, 255, sin8(i * 12 + phase * 4) / 2 + 140);
+    } else {
+      leds[i] = CHSV(40, 220, 80);
+    }
+  }
+  if (random8() < 35) {
+    leds[random16(NUM_LEDS)] = CHSV(0, 0, 255);
+  }
+  showFrame(22);
+}
+
+void ganeshAarti() {
+  static uint8_t wave = 0;
+  wave += 4;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t flame = sin8(i * 8 + wave) / 2 + 140;
+    leds[i] = CHSV(24, 255, flame);
+  }
+  if (random8() < 25) {
+    int pos = random16(NUM_LEDS);
+    leds[pos] = CHSV(48, 200, 255);
+    if (pos > 0) leds[pos - 1] = CHSV(32, 255, 180);
+  }
+  showFrame(20);
+}
+
+void pongalHarvest() {
+  static uint8_t dawn = 0;
+  dawn++;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t gold = sin8(i * 6 + dawn) / 2 + 120;
+    uint8_t green = sin8(i * 4 - dawn / 2) / 4 + 60;
+    leds[i] = CHSV(40, 200, gold);
+    leds[i] += CHSV(80, 180, green);
+  }
+  showFrame(24);
+}
+
+void monsoonRains() {
+  fadeToBlackBy(leds, NUM_LEDS, 35);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV(96, 180, 40);
+  }
+  for (int drop = 0; drop < 4; drop++) {
+    if (random8() < 120) {
+      int pos = random16(NUM_LEDS);
+      leds[pos] = CHSV(160, 120, 220);
+      if (pos > 0) leds[pos - 1] = CHSV(160, 80, 100);
+    }
+  }
+  if (random8() < 12) {
+    leds[random16(NUM_LEDS)] = CHSV(160, 60, 255);
+  }
+  showFrame(22);
+}
+
+void onamPookalam() {
+  static uint8_t ring = 0;
+  ring += 2;
+  const uint8_t floralHues[] = {0, 24, 48, 96, 160, 192, 224};
+  int center = NUM_LEDS / 2;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    int dist = abs(i - center);
+    uint8_t band = (dist / 4 + ring / 6) % 7;
+    uint8_t val = sin8(dist * 12 + ring) / 2 + 130;
+    leds[i] = CHSV(floralHues[band], 230, val);
+  }
+  showFrame(20);
+}
+
+void janmashtamiPeacock() {
+  static uint8_t shimmer = 0;
+  shimmer += 3;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t base = sin8(i * 9 + shimmer);
+    uint8_t hue = 128 + base / 8;
+    uint8_t sat = 255 - base / 4;
+    leds[i] = CHSV(hue, sat, base);
+  }
+  if (random8() < 28) {
+    leds[random16(NUM_LEDS)] = CHSV(64, 255, 255);
+  }
+  showFrame(18);
+}
+
+void baisakhiFields() {
+  static uint8_t breeze = 0;
+  breeze += 2;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t wheat = sin8(i * 5 + breeze) / 2 + 100;
+    leds[i] = CHSV(48, 220, wheat);
+    if ((i + breeze / 4) % 9 < 2) {
+      leds[i] += CHSV(96, 255, 80);
+    }
+  }
+  showFrame(22);
+}
+
+void makarSankrantiKites() {
+  fadeToBlackBy(leds, NUM_LEDS, 30);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV(160, 80, 60);
+  }
+  static int kitePos = 0;
+  static int kiteDir = 1;
+  static uint8_t kiteHue = 0;
+  if (random8() < 8) {
+    kiteHue = random8();
+  }
+  for (int k = -4; k <= 4; k++) {
+    int idx = kitePos + k;
+    if (idx >= 0 && idx < NUM_LEDS) {
+      leds[idx] = CHSV(kiteHue, 255, 255 - abs(k) * 45);
+    }
+  }
+  kitePos += kiteDir;
+  if (kitePos >= NUM_LEDS - 5 || kitePos <= 5) {
+    kiteDir = -kiteDir;
+  }
+  showFrame(16);
+}
+
+void durgaPujaDhak() {
+  static uint8_t pulse = 0;
+  static int8_t delta = 12;
+  pulse += delta;
+  if (pulse >= 240 || pulse <= 20) {
+    delta = -delta;
+  }
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t band = (i / 7) % 2;
+    uint8_t hue = band ? 0 : 224;
+    leds[i] = CHSV(hue, 255, pulse);
+  }
+  if (random8() < 40) {
+    leds[random16(NUM_LEDS)] = CHSV(40, 255, 255);
+  }
+  showFrame(14);
+}
+
+void summerMangoGlow() {
+  static uint8_t ripen = 0;
+  ripen++;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t mango = sin8(i * 7 + ripen) / 2 + 130;
+    leds[i] = CHSV(32, 255, mango);
+    if ((i + ripen / 3) % 11 == 0) {
+      leds[i] += CHSV(64, 200, 90);
+    }
+  }
+  showFrame(26);
+}
+
+// ============================================================
 // NEW: Additional Unique Patterns
 // ============================================================
 

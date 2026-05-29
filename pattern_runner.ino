@@ -98,6 +98,20 @@ void runCurrentPattern() {
     case 74: stPatricksShamrock(); break;
     case 75: valentinesHeartbeat(); break;
     case 76: fourthOfJuly(); break;
+
+    // Indian Festivals & Seasons (77-88)
+    case 77: holiColorSplash(); break;
+    case 78: navratriGarba(); break;
+    case 79: rakhiCelebration(); break;
+    case 80: ganeshAarti(); break;
+    case 81: pongalHarvest(); break;
+    case 82: monsoonRains(); break;
+    case 83: onamPookalam(); break;
+    case 84: janmashtamiPeacock(); break;
+    case 85: baisakhiFields(); break;
+    case 86: makarSankrantiKites(); break;
+    case 87: durgaPujaDhak(); break;
+    case 88: summerMangoGlow(); break;
     
     default: rainbowCycle(); break;
   }

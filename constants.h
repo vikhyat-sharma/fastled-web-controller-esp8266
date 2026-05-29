@@ -109,6 +109,20 @@ const char *patternNames[] = {
   ,"St Patricks Shamrock"
   ,"Valentines Heartbeat"
   ,"Fourth Of July"
+
+  // Indian Festivals & Seasons
+  ,"Holi Color Splash"
+  ,"Navratri Garba"
+  ,"Rakhi Celebration"
+  ,"Ganesh Aarti"
+  ,"Pongal Harvest"
+  ,"Monsoon Rains"
+  ,"Onam Pookalam"
+  ,"Janmashtami Peacock"
+  ,"Baisakhi Fields"
+  ,"Makar Sankranti Kites"
+  ,"Durga Puja Dhak"
+  ,"Summer Mango Glow"
 };
 
 const int TOTAL_PATTERNS = sizeof(patternNames) / sizeof(patternNames[0]);

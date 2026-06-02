@@ -123,6 +123,15 @@ const char *patternNames[] = {
   ,"Makar Sankranti Kites"
   ,"Durga Puja Dhak"
   ,"Summer Mango Glow"
+  
+  // Holiday & Seasonal
+  "Halloween Pumpkin",
+  "Halloween Ghosts",
+  "Diwali Diyas",
+  "Diwali Fireworks",
+  "Easter Eggs",
+  "New Year Fireworks",
+  "New Year Bubbles"
 };
 
 const int TOTAL_PATTERNS = sizeof(patternNames) / sizeof(patternNames[0]);

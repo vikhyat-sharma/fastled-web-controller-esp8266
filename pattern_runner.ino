@@ -112,6 +112,15 @@ void runCurrentPattern() {
     case 86: makarSankrantiKites(); break;
     case 87: durgaPujaDhak(); break;
     case 88: summerMangoGlow(); break;
+
+    // Holiday & Seasonal (89-95)
+    case 89: halloweenPumpkin(); break;
+    case 90: halloweenGhosts(); break;
+    case 91: diwaliDiyas(); break;
+    case 92: diwaliFireworks(); break;
+    case 93: easterEggs(); break;
+    case 94: newYearFireworks(); break;
+    case 95: newYearBubbles(); break;
     
     default: rainbowCycle(); break;
   }

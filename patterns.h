@@ -939,6 +939,90 @@ void summerMangoGlow() {
 }
 
 // ============================================================
+// CATEGORY: Holiday & Seasonal Patterns
+// ============================================================
+
+// Halloween: Pumpkin Orange Glow
+void halloweenPumpkin() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV(24, 255, (sin8(i * 8 + millis() / 4) / 2) + 128);
+  }
+  if (random8() < 10) {
+    leds[random16(NUM_LEDS)] = CRGB::Green;
+  }
+  showFrame(22);
+}
+
+// Halloween: Ghostly Fade
+void halloweenGhosts() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV(0, 0, (sin8(i * 6 + millis() / 3) / 3) + 80);
+  }
+  if (random8() < 8) {
+    leds[random16(NUM_LEDS)] = CRGB::White;
+  }
+  showFrame(24);
+}
+
+// Diwali: Diyas (lamps)
+void diwaliDiyas() {
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  for (int i = 0; i < NUM_LEDS; i += 14) {
+    leds[i] = CRGB::OrangeRed;
+    if (random8() < 40) leds[i] = CRGB::Yellow;
+  }
+  showFrame(30);
+}
+
+// Diwali: Fireworks
+void diwaliFireworks() {
+  fadeToBlackBy(leds, NUM_LEDS, 40);
+  if (random8() < 30) {
+    int pos = random16(NUM_LEDS);
+    leds[pos] = CHSV(random8(), 255, 255);
+    for (int j = 1; j < 6; j++) {
+      int idx = pos + j;
+      if (idx < NUM_LEDS) leds[idx] = CHSV(random8(), 200, 180 - j * 30);
+    }
+  }
+  showFrame(18);
+}
+
+// Easter: Pastel Eggs
+void easterEggs() {
+  static const CRGB pastelColors[] = {CRGB(255, 182, 193), CRGB(176, 224, 230), CRGB(152, 251, 152), CRGB(255, 239, 213), CRGB(221, 160, 221)};
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = pastelColors[(i / 8) % 5];
+  }
+  if (random8() < 10) leds[random16(NUM_LEDS)] = CRGB::White;
+  showFrame(26);
+}
+
+// New Year: Fireworks
+void newYearFireworks() {
+  fadeToBlackBy(leds, NUM_LEDS, 32);
+  if (random8() < 25) {
+    int pos = random16(NUM_LEDS);
+    leds[pos] = CHSV(random8(), 255, 255);
+    for (int j = 1; j < 8; j++) {
+      int idx = pos + j;
+      if (idx < NUM_LEDS) leds[idx] = CHSV(random8(), 200, 180 - j * 20);
+    }
+  }
+  showFrame(16);
+}
+
+// New Year: Champagne Bubbles
+void newYearBubbles() {
+  fadeToBlackBy(leds, NUM_LEDS, 40);
+  for (int i = 0; i < 3; i++) {
+    int pos = random16(NUM_LEDS);
+    leds[pos] = CHSV(40, 30, 255);
+  }
+  showFrame(24);
+}
+
+// ============================================================
 // NEW: Additional Unique Patterns
 // ============================================================
 

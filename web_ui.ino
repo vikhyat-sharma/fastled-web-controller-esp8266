@@ -276,6 +276,96 @@ String buildMainPageHtml() {
       });
     }
 
+    // --- Advanced Color Picker helpers: harmony, conversions, palettes ---
+    function hexToRgb(hex) {
+      hex = hex.replace('#','');
+      return {
+        r: parseInt(hex.substring(0,2),16),
+        g: parseInt(hex.substring(2,4),16),
+        b: parseInt(hex.substring(4,6),16)
+      };
+    }
+
+    function rgbToHex(r,g,b){
+      return '#' + [r,g,b].map(function(x){
+        x = Math.max(0,Math.min(255,Math.round(x)));
+        return ('0'+x.toString(16)).slice(-2);
+      }).join('');
+    }
+
+    function rgbToHsv(r,g,b){
+      r/=255; g/=255; b/=255;
+      var max = Math.max(r,g,b), min = Math.min(r,g,b);
+      var h, s, v = max; var d = max - min;
+      s = max === 0 ? 0 : d / max;
+      if(max === min){ h = 0; } else {
+        switch(max){
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return { h: h*360, s: s*100, v: v*100 };
+    }
+
+    function hsvToRgb(h,s,v){
+      h = (h%360 + 360) % 360; s/=100; v/=100;
+      var c = v * s; var x = c * (1 - Math.abs((h/60) % 2 - 1)); var m = v - c;
+      var r1,g1,b1;
+      if(h < 60){ r1=c; g1=x; b1=0; }
+      else if(h < 120){ r1=x; g1=c; b1=0; }
+      else if(h < 180){ r1=0; g1=c; b1=x; }
+      else if(h < 240){ r1=0; g1=x; b1=c; }
+      else if(h < 300){ r1=x; g1=0; b1=c; }
+      else { r1=c; g1=0; b1=x; }
+      return { r: Math.round((r1+m)*255), g: Math.round((g1+m)*255), b: Math.round((b1+m)*255) };
+    }
+
+    function getComplementaryColor(hex){
+      var rgb = hexToRgb(hex);
+      var hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+      hsv.h = (hsv.h + 180) % 360;
+      var c = hsvToRgb(hsv.h, hsv.s, hsv.v);
+      return rgbToHex(c.r,c.g,c.b);
+    }
+
+    function getTriadicColors(hex){
+      var rgb = hexToRgb(hex);
+      var hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+      var a = (hsv.h + 120) % 360; var b = (hsv.h + 240) % 360;
+      var c1 = hsvToRgb(a,hsv.s,hsv.v); var c2 = hsvToRgb(b,hsv.s,hsv.v);
+      return [rgbToHex(c1.r,c1.g,c1.b), rgbToHex(c2.r,c2.g,c2.b)];
+    }
+
+    // Palette storage and simple editor (localStorage)
+    function savePalette(name, colors){
+      if(!name || !colors || !colors.length) return;
+      var p = JSON.parse(localStorage.getItem('fastled_palettes')||'{}');
+      p[name] = colors.slice(0,16);
+      localStorage.setItem('fastled_palettes', JSON.stringify(p));
+      renderPalettes();
+    }
+
+    function renderPalettes(){
+      var container = document.getElementById('paletteList');
+      if(!container) return;
+      var p = JSON.parse(localStorage.getItem('fastled_palettes')||'{}');
+      container.innerHTML = '';
+      Object.keys(p).forEach(function(name){
+        var row = document.createElement('div'); row.className='palette-row';
+        var label = document.createElement('span'); label.textContent = name; row.appendChild(label);
+        p[name].forEach(function(hex){
+          var sw = document.createElement('span'); sw.className='palette-swatch'; sw.style.background = hex; row.appendChild(sw);
+        });
+        var use = document.createElement('button'); use.textContent='Use'; use.addEventListener('click', function(){ applyPalette(p[name]); }); row.appendChild(use);
+        container.appendChild(row);
+      });
+    }
+
+    function applyPalette(colors){ if(!colors || !colors.length) return; document.getElementById('colorPicker').value = colors[0]; addColorToHistory(colors[0]); }
+
+
     function sendColor() {
       const color = document.getElementById('colorPicker').value;
       const r = parseInt(color.substr(1, 2), 16);

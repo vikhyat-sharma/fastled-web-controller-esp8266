@@ -8,6 +8,7 @@
 #include "patterns.h"
 
 #include <EEPROM.h>
+#include <LittleFS.h>
 #include <fauxmoESP.h>
 
 // EEPROM layout
@@ -93,6 +94,23 @@ void setup() {
     }
   } else {
     Serial.println("\n⚠️ Failed to connect to WiFi within timeout.");
+  }
+
+  // Initialize LittleFS for persistent configuration storage
+  if (!LittleFS.begin()) {
+    Serial.println("LittleFS mount failed, attempting to format...");
+    if (LittleFS.format()) {
+      Serial.println("LittleFS formatted, retrying mount...");
+      if (!LittleFS.begin()) {
+        Serial.println("LittleFS mount failed after format");
+      } else {
+        Serial.println("LittleFS mounted after format");
+      }
+    } else {
+      Serial.println("LittleFS format failed");
+    }
+  } else {
+    Serial.println("LittleFS mounted");
   }
 
   setupWebServer();

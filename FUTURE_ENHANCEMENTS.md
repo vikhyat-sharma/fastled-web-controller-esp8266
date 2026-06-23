@@ -43,8 +43,10 @@ Currently, patterns are defined as individual functions and managed through a sw
 ## 🎨 Features to Implement
 
 ### 1. Advanced Color Picker Features
-**Status:** In Progress  
+**Status:** Implemented
 **Difficulty:** Easy to Medium
+
+**Status update:** Implemented (basic color harmony functions, color history, RGB/HSV conversions, and a simple palette editor added to the web UI). See `web_ui.ino` for the new client-side helpers and storage keys: `fastled_color_history`, `fastled_palettes`.
 
 **Enhancements:**
 - **Color Palette Editor**: Allow users to create custom color gradients

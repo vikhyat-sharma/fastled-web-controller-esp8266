@@ -417,6 +417,7 @@ void yourPatternName() {
 ### Phase 2 (Short-term) - Medium Difficulty
 
 1. Persistent Configuration Storage (LittleFS/JSON)
+  **Status:** In Progress — server-side LittleFS endpoints added for palettes and favorites (see `web_ui.ino`).
   - Store user favorites, color palettes, speed presets, and last-used settings in flash using LittleFS and a JSON config file.
   - Add a settings page to view/edit/reset configuration.
   - Migrate localStorage favorites to persistent config for cross-device use.

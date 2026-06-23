@@ -1,3 +1,6 @@
+// Enable LittleFS for server-side persistent storage access
+#include <LittleFS.h>
+
 String buildMainPageHtml() {
   String html = R"rawliteral(
 <!DOCTYPE html>
@@ -581,6 +584,154 @@ void setupWebServer() {
       request->send(400, "text/plain", "Missing ssid or pw");
     }
   });
+
+  // --- Persistent config endpoints (palettes, favorites, colors) ---
+  auto sanitizeName = [](const String &in)->String {
+    String s = in;
+    for (size_t i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || c == '-')) {
+        s.setCharAt(i, '_');
+      }
+    }
+    return s;
+  };
+
+  server.on("/api/palettesList", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String json = "[";
+    bool first = true;
+    Dir dir = LittleFS.openDir("/");
+    while (dir.next()) {
+      String fname = dir.fileName();
+      if (fname.startsWith("/palette_")) {
+        String pname = fname.substring(9); // strip /palette_
+        if (pname.endsWith(".txt")) pname = pname.substring(0, pname.length() - 4);
+        if (!first) json += ",";
+        json += "\"" + pname + "\"";
+        first = false;
+      }
+    }
+    json += "]";
+    request->send(200, "application/json", json);
+  });
+
+  server.on("/api/palette", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("name")) { request->send(400, "text/plain", "Missing name"); return; }
+    String name = request->getParam("name")->value();
+    String safe = sanitizeName(name);
+    String path = "/palette_" + safe + ".txt";
+    if (!LittleFS.exists(path)) { request->send(404, "text/plain", "Palette not found"); return; }
+    File f = LittleFS.open(path, "r");
+    String content = f.readString();
+    f.close();
+    // build JSON array
+    String json = "[";
+    bool first = true;
+    int start = 0;
+    while (start < content.length()) {
+      int comma = content.indexOf(',', start);
+      String token;
+      if (comma == -1) token = content.substring(start);
+      else token = content.substring(start, comma);
+      token.trim();
+      if (token.length() > 0) {
+        if (!first) json += ",";
+        json += "\"" + token + "\"";
+        first = false;
+      }
+      if (comma == -1) break;
+      start = comma + 1;
+    }
+    json += "]";
+    request->send(200, "application/json", json);
+  });
+
+  server.on("/api/savePalette", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("name") || !request->hasParam("colors")) { request->send(400, "text/plain", "Missing params"); return; }
+    String name = request->getParam("name")->value();
+    String colors = request->getParam("colors")->value();
+    String safe = sanitizeName(name);
+    String path = "/palette_" + safe + ".txt";
+    File f = LittleFS.open(path, "w");
+    if (!f) { request->send(500, "text/plain", "Failed to open file"); return; }
+    f.print(colors);
+    f.close();
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/api/deletePalette", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("name")) { request->send(400, "text/plain", "Missing name"); return; }
+    String safe = sanitizeName(request->getParam("name")->value());
+    String path = "/palette_" + safe + ".txt";
+    if (LittleFS.exists(path)) { LittleFS.remove(path); request->send(200, "text/plain", "Deleted"); }
+    else request->send(404, "text/plain", "Not found");
+  });
+
+  server.on("/api/favorites", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String path = "/favorites.txt";
+    if (!LittleFS.exists(path)) { request->send(200, "application/json", "[]"); return; }
+    File f = LittleFS.open(path, "r"); String content = f.readString(); f.close();
+    // content expected as comma-separated indices
+    String json = "[";
+    bool first = true;
+    int start = 0;
+    while (start < content.length()) {
+      int comma = content.indexOf(',', start);
+      String token;
+      if (comma == -1) token = content.substring(start);
+      else token = content.substring(start, comma);
+      token.trim();
+      if (token.length() > 0) {
+        if (!first) json += ",";
+        json += token;
+        first = false;
+      }
+      if (comma == -1) break;
+      start = comma + 1;
+    }
+    json += "]";
+    request->send(200, "application/json", json);
+  });
+
+  server.on("/api/saveFavorites", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("fav")) { request->send(400, "text/plain", "Missing fav param"); return; }
+    String fav = request->getParam("fav")->value();
+    File f = LittleFS.open("/favorites.txt", "w"); if (!f) { request->send(500, "text/plain", "Failed to save"); return; }
+    f.print(fav); f.close(); request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/api/favColors", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String path = "/fav_colors.txt";
+    if (!LittleFS.exists(path)) { request->send(200, "application/json", "[]"); return; }
+    File f = LittleFS.open(path, "r"); String content = f.readString(); f.close();
+    // split and return JSON array
+    String json = "[";
+    bool first = true; int start = 0;
+    while (start < content.length()) {
+      int comma = content.indexOf(',', start);
+      String token;
+      if (comma == -1) token = content.substring(start);
+      else token = content.substring(start, comma);
+      token.trim();
+      if (token.length() > 0) {
+        if (!first) json += ",";
+        json += "\"" + token + "\"";
+        first = false;
+      }
+      if (comma == -1) break;
+      start = comma + 1;
+    }
+    json += "]";
+    request->send(200, "application/json", json);
+  });
+
+  server.on("/api/saveFavColors", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("colors")) { request->send(400, "text/plain", "Missing colors param"); return; }
+    String colors = request->getParam("colors")->value();
+    File f = LittleFS.open("/fav_colors.txt", "w"); if (!f) { request->send(500, "text/plain", "Failed to save"); return; }
+    f.print(colors); f.close(); request->send(200, "text/plain", "OK");
+  });
+
 
   server.begin();
 }

@@ -417,10 +417,10 @@ void yourPatternName() {
 ### Phase 2 (Short-term) - Medium Difficulty
 
 1. Persistent Configuration Storage (LittleFS/JSON)
-  **Status:** In Progress — server-side LittleFS endpoints added for palettes and favorites (see `web_ui.ino`).
+  **Status:** Completed — server-side LittleFS endpoints implemented and client-side migration done for palettes, favorites, and color history (see `web_ui.ino` and `fastLED.ino`).
   - Store user favorites, color palettes, speed presets, and last-used settings in flash using LittleFS and a JSON config file.
-  - Add a settings page to view/edit/reset configuration.
-  - Migrate localStorage favorites to persistent config for cross-device use.
+  - Add a settings page to view/edit/reset configuration. (UI/settings page still TODO)
+  - LocalStorage favorites/palettes/color history migrated to LittleFS for cross-device persistence.
 
 2. Progressive Web App (PWA) Support
   - Add manifest.json and service worker for offline use and installability.

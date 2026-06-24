@@ -59,53 +59,64 @@ String buildMainPageHtml() {
         <button type="button" id="favColorBtn" style="margin-left:2vw;">★ Favorite Color</button>
         <div id="colorFavoritesBar" style="margin:2vw 0;display:flex;flex-wrap:wrap;justify-content:center;"></div>
         <div id="colorHistoryBar" style="margin-top:2vw;display:flex;flex-wrap:wrap;justify-content:center;"></div>
-          // Color favorites logic (localStorage)
-          const COLOR_FAV_KEY = 'fastled_fav_colors';
-          function getFavColors() {
-            try { return JSON.parse(localStorage.getItem(COLOR_FAV_KEY)) || []; } catch { return []; }
+        <div id="paletteEditor" style="margin-top:2vw;">
+          <label class="label-text">Palette Editor</label>
+          <input type="text" id="paletteName" placeholder="Palette name" style="width:60%;padding:8px;border-radius:6px;border:2px solid #667eea;">
+          <input type="text" id="paletteColors" placeholder="#ff0000,#00ff00,#0000ff" style="width:35%;padding:8px;border-radius:6px;border:2px solid #667eea;">
+          <button id="savePaletteBtn">Save Palette</button>
+          <div id="paletteList" style="margin-top:2vw;display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+          // Color favorites persistence (LittleFS via API)
+          async function fetchFavColors() {
+            try {
+              const res = await fetch('/api/favColors');
+              if (!res.ok) return [];
+              return await res.json();
+            } catch (e) { console.error('fetchFavColors', e); return []; }
           }
-          function saveFavColors(favs) {
-            localStorage.setItem(COLOR_FAV_KEY, JSON.stringify(favs.slice(0, 10)));
+          async function saveFavColorsRemote(arr) {
+            try {
+              const csv = (arr || []).join(',');
+              const res = await fetch('/api/saveFavColors?colors=' + encodeURIComponent(csv));
+              return res.ok;
+            } catch (e) { console.error('saveFavColorsRemote', e); return false; }
           }
-          function toggleFavColor(hex) {
-            let favs = getFavColors();
-            if (favs.includes(hex)) {
-              favs = favs.filter(c => c !== hex);
-            } else {
-              favs.unshift(hex);
-            }
-            saveFavColors(favs);
+          async function toggleFavColor(hex) {
+            let favs = await fetchFavColors();
+            if (favs.includes(hex)) favs = favs.filter(c => c !== hex);
+            else favs.unshift(hex);
+            if (favs.length > 10) favs.length = 10;
+            await saveFavColorsRemote(favs);
             renderFavColors();
           }
           function renderFavColors() {
-            const favs = getFavColors();
-            const bar = document.getElementById('colorFavoritesBar');
-            bar.innerHTML = '';
-            if (favs.length === 0) {
-              bar.innerHTML = '<span style="color:#888;font-size:3vw;">No favorite colors yet.</span>';
-              return;
-            }
-            favs.forEach(hex => {
-              const swatch = document.createElement('div');
-              swatch.style.background = hex;
-              swatch.style.width = '36px';
-              swatch.style.height = '36px';
-              swatch.style.margin = '2px';
-              swatch.style.border = '3px solid gold';
-              swatch.style.borderRadius = '8px';
-              swatch.style.cursor = 'pointer';
-              swatch.title = hex + ' (favorite)';
-              swatch.onclick = () => {
-                document.getElementById('colorPicker').value = hex;
-              };
-              bar.appendChild(swatch);
+            fetchFavColors().then(favs => {
+              const bar = document.getElementById('colorFavoritesBar');
+              bar.innerHTML = '';
+              if (!favs || favs.length === 0) {
+                bar.innerHTML = '<span style="color:#888;font-size:3vw;">No favorite colors yet.</span>';
+                return;
+              }
+              favs.forEach(hex => {
+                const swatch = document.createElement('div');
+                swatch.style.background = hex;
+                swatch.style.width = '36px';
+                swatch.style.height = '36px';
+                swatch.style.margin = '2px';
+                swatch.style.border = '3px solid gold';
+                swatch.style.borderRadius = '8px';
+                swatch.style.cursor = 'pointer';
+                swatch.title = hex + ' (favorite)';
+                swatch.onclick = () => { document.getElementById('colorPicker').value = hex; };
+                bar.appendChild(swatch);
+              });
             });
           }
           window.addEventListener('DOMContentLoaded', () => {
             renderFavColors();
-            document.getElementById('favColorBtn').onclick = function() {
+            document.getElementById('favColorBtn').onclick = async function() {
               const hex = document.getElementById('colorPicker').value;
-              toggleFavColor(hex);
+              await toggleFavColor(hex);
             };
           });
       </div>
@@ -132,30 +143,23 @@ String buildMainPageHtml() {
     </div>
     // Pattern favorites logic (localStorage)
     const PATTERN_FAV_KEY = 'fastled_fav_patterns';
-    function getFavPatterns() {
-      try { return JSON.parse(localStorage.getItem(PATTERN_FAV_KEY)) || []; } catch { return []; }
+    async function fetchFavPatterns() {
+      try { const res = await fetch('/api/favorites'); if (!res.ok) return []; return await res.json(); } catch { return []; }
     }
-    function saveFavPatterns(favs) {
-      localStorage.setItem(PATTERN_FAV_KEY, JSON.stringify(favs));
+    async function saveFavPatternsRemote(arr) {
+      try { const csv = (arr||[]).join(','); const res = await fetch('/api/saveFavorites?fav=' + encodeURIComponent(csv)); return res.ok; } catch { return false; }
     }
-    function toggleFavPattern(idx) {
-      let favs = getFavPatterns();
-      if (favs.includes(idx)) {
-        favs = favs.filter(i => i !== idx);
-      } else {
-        favs.push(idx);
-      }
-      saveFavPatterns(favs);
+    async function toggleFavPattern(idx) {
+      let favs = await fetchFavPatterns();
+      if (favs.includes(idx)) favs = favs.filter(i => i !== idx); else favs.push(idx);
+      await saveFavPatternsRemote(favs);
       renderFavPatterns();
     }
-    function renderFavPatterns() {
-      const favs = getFavPatterns();
+    async function renderFavPatterns() {
+      const favs = await fetchFavPatterns();
       const bar = document.getElementById('favoritePatternsBar');
       bar.innerHTML = '';
-      if (favs.length === 0) {
-        bar.innerHTML = '<span style="color:#888;font-size:3vw;">No favorites yet. Mark patterns as favorites for quick access!</span>';
-        return;
-      }
+      if (!favs || favs.length === 0) { bar.innerHTML = '<span style="color:#888;font-size:3vw;">No favorites yet. Mark patterns as favorites for quick access!</span>'; return; }
       favs.forEach(idx => {
         const btn = document.createElement('button');
         btn.className = 'button';
@@ -164,10 +168,7 @@ String buildMainPageHtml() {
         btn.style.fontWeight = 'bold';
         btn.style.fontSize = '4vw';
         btn.textContent = '★ ' + patternNames[idx];
-        btn.onclick = () => {
-          document.getElementById('patternSelect').value = idx;
-          document.querySelector('form[action="/pattern"]').submit();
-        };
+        btn.onclick = () => { document.getElementById('patternSelect').value = idx; document.querySelector('form[action="/pattern"]').submit(); };
         bar.appendChild(btn);
       });
     }
@@ -241,26 +242,27 @@ String buildMainPageHtml() {
     let loadedPatterns = false;
 
 
-    // Color history logic
-    const COLOR_HISTORY_KEY = 'fastled_color_history';
-    function getColorHistory() {
+    // Color history persistence (LittleFS via API)
+    async function fetchColorHistory() {
+      try { const res = await fetch('/api/colorHistory'); if (!res.ok) return []; return await res.json(); } catch (e) { console.error('fetchColorHistory', e); return []; }
+    }
+    async function saveColorHistoryRemote(arr) {
+      try { const csv = (arr||[]).join(','); const res = await fetch('/api/saveColorHistory?colors=' + encodeURIComponent(csv)); return res.ok; } catch (e) { console.error('saveColorHistoryRemote', e); return false; }
+    }
+    async function addColorToHistory(hex) {
       try {
-        return JSON.parse(localStorage.getItem(COLOR_HISTORY_KEY)) || [];
-      } catch { return []; }
+        let hist = await fetchColorHistory();
+        hist = hist.filter(c => c.toLowerCase() !== hex.toLowerCase());
+        hist.unshift(hex);
+        if (hist.length > 12) hist.length = 12;
+        await saveColorHistoryRemote(hist);
+        renderColorHistory();
+      } catch (e) { console.error('addColorToHistory', e); }
     }
-    function saveColorHistory(hist) {
-      localStorage.setItem(COLOR_HISTORY_KEY, JSON.stringify(hist.slice(0, 12)));
-    }
-    function addColorToHistory(hex) {
-      let hist = getColorHistory();
-      hist = hist.filter(c => c !== hex);
-      hist.unshift(hex);
-      saveColorHistory(hist);
-      renderColorHistory();
-    }
-    function renderColorHistory() {
-      const hist = getColorHistory();
+    async function renderColorHistory() {
+      const hist = await fetchColorHistory();
       const bar = document.getElementById('colorHistoryBar');
+      if (!bar) return;
       bar.innerHTML = '';
       hist.forEach(hex => {
         const swatch = document.createElement('div');
@@ -272,9 +274,7 @@ String buildMainPageHtml() {
         swatch.style.borderRadius = '6px';
         swatch.style.cursor = 'pointer';
         swatch.title = hex;
-        swatch.onclick = () => {
-          document.getElementById('colorPicker').value = hex;
-        };
+        swatch.onclick = () => { document.getElementById('colorPicker').value = hex; };
         bar.appendChild(swatch);
       });
     }
@@ -341,29 +341,49 @@ String buildMainPageHtml() {
       return [rgbToHex(c1.r,c1.g,c1.b), rgbToHex(c2.r,c2.g,c2.b)];
     }
 
-    // Palette storage and simple editor (localStorage)
-    function savePalette(name, colors){
-      if(!name || !colors || !colors.length) return;
-      var p = JSON.parse(localStorage.getItem('fastled_palettes')||'{}');
-      p[name] = colors.slice(0,16);
-      localStorage.setItem('fastled_palettes', JSON.stringify(p));
-      renderPalettes();
+    // Palette storage and simple editor (server-backed via LittleFS API)
+    async function fetchPalettesList(){
+      try { const res = await fetch('/api/palettesList'); if (!res.ok) return []; return await res.json(); } catch (e) { console.error('fetchPalettesList', e); return []; }
     }
 
-    function renderPalettes(){
-      var container = document.getElementById('paletteList');
+    async function fetchPalette(name){
+      try { const res = await fetch('/api/palette?name=' + encodeURIComponent(name)); if (!res.ok) return null; return await res.json(); } catch (e) { console.error('fetchPalette', e); return null; }
+    }
+
+    async function savePalette(name, colors){
+      if(!name || !colors || !colors.length) return false;
+      try {
+        const csv = colors.join(',');
+        const res = await fetch('/api/savePalette?name=' + encodeURIComponent(name) + '&colors=' + encodeURIComponent(csv));
+        if (res.ok) { renderPalettes(); return true; }
+      } catch (e) { console.error('savePalette', e); }
+      return false;
+    }
+
+    async function deletePalette(name){
+      try { const res = await fetch('/api/deletePalette?name=' + encodeURIComponent(name)); if (res.ok) renderPalettes(); } catch (e) { console.error('deletePalette', e); }
+    }
+
+    async function renderPalettes(){
+      const container = document.getElementById('paletteList');
       if(!container) return;
-      var p = JSON.parse(localStorage.getItem('fastled_palettes')||'{}');
+      const list = await fetchPalettesList();
       container.innerHTML = '';
-      Object.keys(p).forEach(function(name){
-        var row = document.createElement('div'); row.className='palette-row';
-        var label = document.createElement('span'); label.textContent = name; row.appendChild(label);
-        p[name].forEach(function(hex){
-          var sw = document.createElement('span'); sw.className='palette-swatch'; sw.style.background = hex; row.appendChild(sw);
-        });
-        var use = document.createElement('button'); use.textContent='Use'; use.addEventListener('click', function(){ applyPalette(p[name]); }); row.appendChild(use);
+      if (!list || list.length === 0) {
+        container.innerHTML = '<span style="color:#888;font-size:3vw;">No saved palettes.</span>';
+        return;
+      }
+      for (const name of list) {
+        const colors = await fetchPalette(name);
+        const row = document.createElement('div'); row.className='palette-row';
+        const label = document.createElement('span'); label.textContent = name; row.appendChild(label);
+        if (colors && colors.length) {
+          colors.forEach(hex => { const sw = document.createElement('span'); sw.className='palette-swatch'; sw.style.background = hex; sw.style.display='inline-block'; sw.style.width='24px'; sw.style.height='24px'; sw.style.margin='2px'; row.appendChild(sw); });
+        }
+        const use = document.createElement('button'); use.textContent='Use'; use.addEventListener('click', function(){ applyPalette(colors); }); row.appendChild(use);
+        const del = document.createElement('button'); del.textContent='Delete'; del.addEventListener('click', function(){ if (confirm('Delete palette ' + name + '?')) deletePalette(name); }); row.appendChild(del);
         container.appendChild(row);
-      });
+      }
     }
 
     function applyPalette(colors){ if(!colors || !colors.length) return; document.getElementById('colorPicker').value = colors[0]; addColorToHistory(colors[0]); }
@@ -386,8 +406,21 @@ String buildMainPageHtml() {
         .catch(err => alert("Error applying color: " + err));
     }
 
-    // On load, render color history
+    // On load, render color history and palettes
     window.addEventListener('DOMContentLoaded', renderColorHistory);
+    window.addEventListener('DOMContentLoaded', async () => {
+      renderPalettes();
+      // attach save button
+      const saveBtn = document.getElementById('savePaletteBtn');
+      if (saveBtn) saveBtn.addEventListener('click', async () => {
+        const name = (document.getElementById('paletteName') || {}).value || '';
+        const colors = ((document.getElementById('paletteColors') || {}).value || '').split(',').map(s=>s.trim()).filter(Boolean);
+        if (!name || colors.length === 0) { alert('Provide a name and at least one color (comma separated)'); return; }
+        await savePalette(name, colors);
+        document.getElementById('paletteName').value = '';
+        document.getElementById('paletteColors').value = '';
+      });
+    });
 
     function toggleColorMode() {
       fetch('/toggleColorMode')
@@ -729,6 +762,38 @@ void setupWebServer() {
     if (!request->hasParam("colors")) { request->send(400, "text/plain", "Missing colors param"); return; }
     String colors = request->getParam("colors")->value();
     File f = LittleFS.open("/fav_colors.txt", "w"); if (!f) { request->send(500, "text/plain", "Failed to save"); return; }
+    f.print(colors); f.close(); request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/api/colorHistory", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String path = "/color_history.txt";
+    if (!LittleFS.exists(path)) { request->send(200, "application/json", "[]"); return; }
+    File f = LittleFS.open(path, "r"); String content = f.readString(); f.close();
+    String json = "[";
+    bool first = true;
+    int start = 0;
+    while (start < content.length()) {
+      int comma = content.indexOf(',', start);
+      String token;
+      if (comma == -1) token = content.substring(start);
+      else token = content.substring(start, comma);
+      token.trim();
+      if (token.length() > 0) {
+        if (!first) json += ",";
+        json += "\"" + token + "\"";
+        first = false;
+      }
+      if (comma == -1) break;
+      start = comma + 1;
+    }
+    json += "]";
+    request->send(200, "application/json", json);
+  });
+
+  server.on("/api/saveColorHistory", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("colors")) { request->send(400, "text/plain", "Missing colors param"); return; }
+    String colors = request->getParam("colors")->value();
+    File f = LittleFS.open("/color_history.txt", "w"); if (!f) { request->send(500, "text/plain", "Failed to save"); return; }
     f.print(colors); f.close(); request->send(200, "text/plain", "OK");
   });
 

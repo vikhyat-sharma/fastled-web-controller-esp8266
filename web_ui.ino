@@ -61,10 +61,22 @@ String buildMainPageHtml() {
         <div id="colorHistoryBar" style="margin-top:2vw;display:flex;flex-wrap:wrap;justify-content:center;"></div>
         <div id="paletteEditor" style="margin-top:2vw;">
           <label class="label-text">Palette Editor</label>
-          <input type="text" id="paletteName" placeholder="Palette name" style="width:60%;padding:8px;border-radius:6px;border:2px solid #667eea;">
-          <input type="text" id="paletteColors" placeholder="#ff0000,#00ff00,#0000ff" style="width:35%;padding:8px;border-radius:6px;border:2px solid #667eea;">
-          <button id="savePaletteBtn">Save Palette</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;">
+            <input type="text" id="paletteName" placeholder="Palette name" style="width:40%;padding:8px;border-radius:6px;border:2px solid #667eea;">
+            <input type="text" id="paletteColors" placeholder="#ff0000,#00ff00,#0000ff" style="width:45%;padding:8px;border-radius:6px;border:2px solid #667eea;">
+            <button id="savePaletteBtn">Save</button>
+            <button id="exportPaletteBtn">Export</button>
+          </div>
+          <div style="margin-top:8px;text-align:left;max-width:90%;margin-left:auto;margin-right:auto;">
+            <small style="color:#666;">Enter colors as comma-separated hex values. Example: <code>#ff0000,#00ff00,#0000ff</code></small>
+          </div>
+          <div style="margin-top:8px;text-align:left;max-width:90%;margin-left:auto;margin-right:auto;">
+            <label class="label-text">Import Palette (JSON array or CSV)</label>
+            <textarea id="importPaletteArea" rows="3" style="width:100%;padding:8px;border-radius:6px;border:2px solid #667eea;" placeholder='["#ff0000","#00ff00"] or #ff0000,#00ff00'></textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;"><button id="importPaletteBtn">Import</button></div>
+          </div>
           <div id="paletteList" style="margin-top:2vw;display:flex;flex-direction:column;gap:6px;"></div>
+          <div id="paletteMsg" style="margin-top:8px;color:#117a37;font-weight:bold;display:none;"></div>
         </div>
           // Color favorites persistence (LittleFS via API)
           async function fetchFavColors() {
@@ -388,6 +400,35 @@ String buildMainPageHtml() {
 
     function applyPalette(colors){ if(!colors || !colors.length) return; document.getElementById('colorPicker').value = colors[0]; addColorToHistory(colors[0]); }
 
+    // Export a palette as JSON file
+    function exportPalette(name, colors){
+      if(!name || !colors || !colors.length) { alert('No palette to export'); return; }
+      const data = { name: name, colors: colors };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name + '.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // Import from textarea: accept JSON array or CSV
+    async function importPaletteFromArea(){
+      const txt = (document.getElementById('importPaletteArea')||{}).value || '';
+      if (!txt.trim()) { alert('Paste JSON array or CSV of colors'); return; }
+      let colors = null;
+      try {
+        const parsed = JSON.parse(txt);
+        if (Array.isArray(parsed)) colors = parsed.map(s=>String(s).trim()).filter(Boolean);
+      } catch(_) {
+        // fallback to CSV
+        colors = txt.split(',').map(s=>s.trim()).filter(Boolean);
+      }
+      if (!colors || colors.length === 0) { alert('No valid colors found'); return; }
+      const name = prompt('Name for imported palette:');
+      if (!name) return;
+      const ok = await savePalette(name, colors);
+      if (ok) { document.getElementById('paletteMsg').textContent = 'Palette saved: ' + name; document.getElementById('paletteMsg').style.display = 'block'; setTimeout(()=>{ document.getElementById('paletteMsg').style.display='none'; }, 3000); }
+    }
+
 
     function sendColor() {
       const color = document.getElementById('colorPicker').value;
@@ -416,10 +457,34 @@ String buildMainPageHtml() {
         const name = (document.getElementById('paletteName') || {}).value || '';
         const colors = ((document.getElementById('paletteColors') || {}).value || '').split(',').map(s=>s.trim()).filter(Boolean);
         if (!name || colors.length === 0) { alert('Provide a name and at least one color (comma separated)'); return; }
-        await savePalette(name, colors);
+        const ok = await savePalette(name, colors);
+        if (ok) {
+          document.getElementById('paletteMsg').textContent = 'Saved palette: ' + name;
+          document.getElementById('paletteMsg').style.display = 'block';
+          setTimeout(()=>{ document.getElementById('paletteMsg').style.display='none'; }, 2500);
+        }
         document.getElementById('paletteName').value = '';
         document.getElementById('paletteColors').value = '';
       });
+      const expBtn = document.getElementById('exportPaletteBtn');
+      if (expBtn) expBtn.addEventListener('click', async () => {
+        const name = (document.getElementById('paletteName') || {}).value || '';
+        const colors = ((document.getElementById('paletteColors') || {}).value || '').split(',').map(s=>s.trim()).filter(Boolean);
+        if (!name) {
+          alert('Enter the palette name to export (or use saved palette list export).');
+          return;
+        }
+        if (colors.length === 0) {
+          // try fetching saved palette
+          const p = await fetchPalette(name);
+          if (!p) { alert('No palette colors available to export'); return; }
+          exportPalette(name, p);
+        } else {
+          exportPalette(name, colors);
+        }
+      });
+      const impBtn = document.getElementById('importPaletteBtn');
+      if (impBtn) impBtn.addEventListener('click', importPaletteFromArea);
     });
 
     function toggleColorMode() {

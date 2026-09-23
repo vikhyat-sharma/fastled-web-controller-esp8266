@@ -4,7 +4,7 @@
 ![Framework](https://img.shields.io/badge/framework-Arduino-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A lightweight, web-based LED strip controller built on ESP8266, FastLED, and AsyncWebServer. It provides a responsive browser interface for real-time control of LED animations, designed with performance, simplicity, and clean visuals in mind.
+A lightweight, web-based LED strip controller built on ESP8266, FastLED, and AsyncWebServer. It provides a responsive browser interface for real-time control of LED animations with a focus on reliability, maintainability, and a polished UX.
 
 ---
 
@@ -28,25 +28,27 @@ A lightweight, web-based LED strip controller built on ESP8266, FastLED, and Asy
 
 ### Hardware
 
-* ESP8266 development board (e.g., NodeMCU, Wemos D1 Mini)
-* Addressable LED strip (WS2812B / NeoPixel or compatible)
-* Adequate power supply (based on LED count)
+* ESP8266 development board (NodeMCU, Wemos D1 Mini, or similar)
+* Addressable LED strip (WS2812B / NeoPixel compatible)
+* 5V power supply sized for your strip length
 * USB cable for flashing
 
 ### Software
 
-* Arduino IDE (latest recommended)
+* Arduino IDE or Arduino CLI
 * ESP8266 board support installed
 
 ### Libraries
 
-Install via Arduino Library Manager:
+Install via the Arduino Library Manager:
 
 * FastLED
 * ESPAsyncWebServer
 * ESP8266WiFi
+* EEPROM
+* LittleFS
 
-> ℹ️ `ESPAsyncWebServer` may also require `ESPAsyncTCP` depending on your setup.
+> Note: `ESPAsyncWebServer` may also require `ESPAsyncTCP` depending on your environment.
 
 ### Network
 
@@ -100,56 +102,58 @@ D4 (GPIO2) --------------------------> DIN
 
 ## 🚀 Getting Started
 
-### 1. Clone the Repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/vikhyat-sharma/fastled-web-controller.git
 cd fastled-web-controller
 ```
 
-### 2. Configure Wi-Fi Credentials
+### 2. Create your Wi-Fi config
 
-```cpp
-// secrets.h
-const char* ssid = "YOUR_WIFI";
-const char* password = "YOUR_PASSWORD";
+Copy the example file and update the credentials:
+
+```bash
+cp secrets.example.h secrets.h
 ```
 
-* Copy `secrets.example.h` → `secrets.h`
-* Update credentials
+Then edit the file and set your Wi-Fi SSID and password.
 
-### 3. Upload to ESP8266
+### 3. Flash the firmware
 
-* Select your board in Arduino IDE
-* Compile and upload
+Open the sketch in Arduino IDE or use Arduino CLI, then compile and upload to your ESP8266 board.
 
-### 4. Access the Web Interface
+### 4. Connect and control
 
-* Open Serial Monitor (baud rate as configured)
-* Note the device IP address
-* Open it in your browser
+After boot, the board will connect to Wi-Fi and expose the web interface. Open the device IP address or `http://fastled.local` if mDNS is available.
 
 ---
 
 ## 🗂️ Project Structure
 
 ```
-fastLED.ino          # Core setup, state, and patterns
-web_ui.ino           # Web UI + API routes
-pattern_runner.ino   # Pattern dispatch logic
-secrets.h            # Local credentials (ignored by git)
-secrets.example.h    # Template credentials file
+fastLED.ino          # Boot sequence, Wi-Fi startup, and runtime loop
+web_ui.ino           # Web UI markup, API routes, and persistence helpers
+pattern_runner.ino   # Pattern dispatch and registration
+constants.h          # Configuration values and pattern catalog
+colormanagement.h    # Color state helpers and frame timing utilities
+patterns.h           # Animation implementations
 ```
 
 ---
 
 ## 🔌 API Reference
 
-| Endpoint         | Method | Description                |
-| ---------------- | ------ | -------------------------- |
-| `/`              | GET    | Web interface              |
-| `/json/status`   | GET    | Current controller state   |
-| `/json/patterns` | GET    | List of available patterns |
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/` | GET | Web interface |
+| `/json/status` | GET | Current controller state and memory usage |
+| `/json/patterns` | GET | List of available patterns |
+| `/setColor` | GET | Apply a direct RGB color override |
+| `/hsv` | GET | Adjust hue, saturation, and brightness |
+| `/pattern` | GET | Switch the active pattern |
+| `/api/palettesList` | GET | List saved palettes |
+| `/api/savePalette` | GET | Save a palette to LittleFS |
 
 ---
 
@@ -172,10 +176,11 @@ Common parameters you may want to tweak:
 
 ## 🛠️ Roadmap
 
-* [ ] Save presets
 * [ ] OTA firmware updates
-* [ ] Mobile UI improvements
+* [ ] Preset and scene saving
+* [ ] Mobile-specific UI refinements
 * [ ] MQTT / Home Assistant integration
+* [ ] Additional pattern categories and presets
 
 ---
 
@@ -186,6 +191,8 @@ Contributions are welcome. If you’d like to improve patterns, UI, or performan
 1. Fork the repository
 2. Create a feature branch
 3. Submit a pull request
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions and PR expectations.
 
 ---
 

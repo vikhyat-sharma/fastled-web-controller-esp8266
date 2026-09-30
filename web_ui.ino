@@ -1,867 +1,714 @@
-// Enable LittleFS for server-side persistent storage access
 #include <LittleFS.h>
+#include <ArduinoJson.h>
 
-String buildMainPageHtml() {
-  String html = R"rawliteral(
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>FastLED Web Controller - Enhanced</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 8px; margin: 0; min-height: 100vh; }
-    h2, h3 { color: #fff; margin: 12px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-    .container { max-width: 98vw; margin: auto; background: rgba(255,255,255,0.97); padding: 2vw 2vw 2vw 2vw; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
-    .section { border-top: 2px solid #667eea; padding-top: 4vw; margin-top: 4vw; }
-    .section:first-child { border-top: none; margin-top: 0; }
-    .button, input[type=submit] { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 4vw 6vw; margin: 2vw; border-radius: 8px; font-size: 5vw; font-weight: bold; cursor: pointer; transition: transform 0.2s; min-width: 40vw; }
-    .button:hover, input[type=submit]:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
-    .button:active, input[type=submit]:active { transform: translateY(0); }
-    input[type=range] { width: 100%; max-width: 95vw; margin: 4vw 0; padding: 2vw; font-size: 4vw; border-radius: 6px; border: 2px solid #667eea; cursor: pointer; }
-    input[type=range]::-webkit-slider-thumb { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; }
-    select { width: 98vw; max-width: 98vw; margin: 4vw 0; padding: 3vw; font-size: 4vw; border-radius: 6px; border: 2px solid #667eea; background-color: white; cursor: pointer; }
-    form { margin-bottom: 4vw; }
-    details { text-align: left; margin: 4vw auto; max-width: 98vw; border-left: 4px solid #667eea; padding-left: 3vw; }
-    summary { cursor: pointer; color: #667eea; font-weight: bold; padding: 2vw; user-select: none; font-size: 4vw; }
-    #patternList { margin-top: 4vw; max-height: 60vw; overflow-y: auto; border: 2px solid #ddd; border-radius: 8px; background: #fafafa; padding: 3vw; }
-    .pattern-item { padding: 3vw; border-bottom: 1px solid #ececec; font-size: 4vw; cursor: pointer; transition: background 0.2s; border-radius: 4px; }
-    .pattern-item:hover { background: #e8eef7; }
-    .pattern-item:last-child { border-bottom: none; }
-    .color-picker-container { margin: 4vw 0; padding: 4vw; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border: 2px solid #667eea; display: inline-block; color: #333; width: 90vw; }
-    #colorPicker { width: 80vw; height: 10vw; margin: 2vw auto; border: 3px solid #667eea; border-radius: 8px; cursor: pointer; display: block; }
-    .color-picker-container button { margin: 2vw 2vw; padding: 3vw 6vw; border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; font-weight: bold; font-size: 4vw; }
-    .color-picker-container button:hover { transform: scale(1.05); }
-    .info-box { background: #e3f2fd; border-left: 4px solid #667eea; padding: 3vw; margin: 3vw 0; border-radius: 6px; text-align: left; font-size: 3vw; }
-    .label-text { display: block; margin: 3vw 0 2vw 0; font-weight: bold; color: #333; font-size: 4vw; }
-    @media (min-width: 600px) {
-      .container { max-width: 800px; padding: 24px; }
-      .button, input[type=submit] { font-size: 16px; min-width: 120px; padding: 12px 24px; }
-      select, input[type=range] { font-size: 15px; }
-      .pattern-item, .label-text, summary { font-size: 16px; }
-      .info-box { font-size: 14px; }
-      #colorPicker { width: 100px; height: 50px; }
-      .color-picker-container { width: auto; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>🎨 FastLED Web Controller</h2>
-    <h3>Current Pattern: <span style="color: #667eea;">%CURRENT_PATTERN%</span></h3>
+// Forward declarations for state defined in fastLED.ino
+extern bool saveWifiToEEPROM(const String &newSsid, const String &newPassword);
+extern void markSettingsDirty();
 
-    <div class="section">
-      <h3>🎨 Color Picker (Works with All Patterns)</h3>
-      <div class="color-picker-container">
-        <label for="colorPicker" style="font-weight: bold;">Select Color:</label>
-        <input type="color" id="colorPicker" value="#0f0000">
-        <button onclick="sendColor()">Apply Color</button>
-        <button onclick="toggleColorMode()">Disable Color Override</button>
-        <button type="button" id="favColorBtn" style="margin-left:2vw;">★ Favorite Color</button>
-        <div id="colorFavoritesBar" style="margin:2vw 0;display:flex;flex-wrap:wrap;justify-content:center;"></div>
-        <div id="colorHistoryBar" style="margin-top:2vw;display:flex;flex-wrap:wrap;justify-content:center;"></div>
-        <div id="paletteEditor" style="margin-top:2vw;">
-          <label class="label-text">Palette Editor</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;">
-            <input type="text" id="paletteName" placeholder="Palette name" style="width:40%;padding:8px;border-radius:6px;border:2px solid #667eea;">
-            <input type="text" id="paletteColors" placeholder="#ff0000,#00ff00,#0000ff" style="width:45%;padding:8px;border-radius:6px;border:2px solid #667eea;">
-            <button id="savePaletteBtn">Save</button>
-            <button id="exportPaletteBtn">Export</button>
-          </div>
-          <div style="margin-top:8px;text-align:left;max-width:90%;margin-left:auto;margin-right:auto;">
-            <small style="color:#666;">Enter colors as comma-separated hex values. Example: <code>#ff0000,#00ff00,#0000ff</code></small>
-          </div>
-          <div style="margin-top:8px;text-align:left;max-width:90%;margin-left:auto;margin-right:auto;">
-            <label class="label-text">Import Palette (JSON array or CSV)</label>
-            <textarea id="importPaletteArea" rows="3" style="width:100%;padding:8px;border-radius:6px;border:2px solid #667eea;" placeholder='["#ff0000","#00ff00"] or #ff0000,#00ff00'></textarea>
-            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;"><button id="importPaletteBtn">Import</button></div>
-          </div>
-          <div id="paletteList" style="margin-top:2vw;display:flex;flex-direction:column;gap:6px;"></div>
-          <div id="paletteMsg" style="margin-top:8px;color:#117a37;font-weight:bold;display:none;"></div>
-        </div>
-          // Color favorites persistence (LittleFS via API)
-          async function fetchFavColors() {
-            try {
-              const res = await fetch('/api/favColors');
-              if (!res.ok) return [];
-              return await res.json();
-            } catch (e) { console.error('fetchFavColors', e); return []; }
-          }
-          async function saveFavColorsRemote(arr) {
-            try {
-              const csv = (arr || []).join(',');
-              const res = await fetch('/api/saveFavColors?colors=' + encodeURIComponent(csv));
-              return res.ok;
-            } catch (e) { console.error('saveFavColorsRemote', e); return false; }
-          }
-          async function toggleFavColor(hex) {
-            let favs = await fetchFavColors();
-            if (favs.includes(hex)) favs = favs.filter(c => c !== hex);
-            else favs.unshift(hex);
-            if (favs.length > 10) favs.length = 10;
-            await saveFavColorsRemote(favs);
-            renderFavColors();
-          }
-          function renderFavColors() {
-            fetchFavColors().then(favs => {
-              const bar = document.getElementById('colorFavoritesBar');
-              bar.innerHTML = '';
-              if (!favs || favs.length === 0) {
-                bar.innerHTML = '<span style="color:#888;font-size:3vw;">No favorite colors yet.</span>';
-                return;
-              }
-              favs.forEach(hex => {
-                const swatch = document.createElement('div');
-                swatch.style.background = hex;
-                swatch.style.width = '36px';
-                swatch.style.height = '36px';
-                swatch.style.margin = '2px';
-                swatch.style.border = '3px solid gold';
-                swatch.style.borderRadius = '8px';
-                swatch.style.cursor = 'pointer';
-                swatch.title = hex + ' (favorite)';
-                swatch.onclick = () => { document.getElementById('colorPicker').value = hex; };
-                bar.appendChild(swatch);
-              });
-            });
-          }
-          window.addEventListener('DOMContentLoaded', () => {
-            renderFavColors();
-            document.getElementById('favColorBtn').onclick = async function() {
-              const hex = document.getElementById('colorPicker').value;
-              await toggleFavColor(hex);
-            };
-          });
-      </div>
-      <div class="info-box">
-        💡 Select a color and click "Apply Color" to apply it to the current pattern. Use "Disable Color Override" to use pattern defaults.<br>
-        Tap a color below to reuse it:
-        <span id="colorHistoryHint"></span>
-      </div>
-    </div>
+// ── Response helpers ──────────────────────────────────────────────────────────
 
-    <div class="section">
-      <h3>Pattern Selection</h3>
-      <form action='/pattern' method='GET' style="margin-bottom:2vw;">
-        <select id='patternSelect' name='index'>%PATTERN_OPTIONS%</select><br>
-        <input type='submit' value='Apply Pattern'>
-        <button type="button" id="favPatternBtn" style="margin-left:2vw;">★ Favorite</button>
-      </form>
-      <div id="favoritePatternsBar" style="margin-bottom:2vw;"></div>
-
-      <details id='allPatterns'>
-        <summary>📋 Show all patterns (lazy loaded)</summary>
-        <div id='patternList'>Tap to load list...</div>
-      </details>
-    </div>
-    // Pattern favorites logic (localStorage)
-    const PATTERN_FAV_KEY = 'fastled_fav_patterns';
-    async function fetchFavPatterns() {
-      try { const res = await fetch('/api/favorites'); if (!res.ok) return []; return await res.json(); } catch { return []; }
-    }
-    async function saveFavPatternsRemote(arr) {
-      try { const csv = (arr||[]).join(','); const res = await fetch('/api/saveFavorites?fav=' + encodeURIComponent(csv)); return res.ok; } catch { return false; }
-    }
-    async function toggleFavPattern(idx) {
-      let favs = await fetchFavPatterns();
-      if (favs.includes(idx)) favs = favs.filter(i => i !== idx); else favs.push(idx);
-      await saveFavPatternsRemote(favs);
-      renderFavPatterns();
-    }
-    async function renderFavPatterns() {
-      const favs = await fetchFavPatterns();
-      const bar = document.getElementById('favoritePatternsBar');
-      bar.innerHTML = '';
-      if (!favs || favs.length === 0) { bar.innerHTML = '<span style="color:#888;font-size:3vw;">No favorites yet. Mark patterns as favorites for quick access!</span>'; return; }
-      favs.forEach(idx => {
-        const btn = document.createElement('button');
-        btn.className = 'button';
-        btn.style.background = 'linear-gradient(135deg,#ffd700 0%,#ffb300 100%)';
-        btn.style.color = '#333';
-        btn.style.fontWeight = 'bold';
-        btn.style.fontSize = '4vw';
-        btn.textContent = '★ ' + patternNames[idx];
-        btn.onclick = () => { document.getElementById('patternSelect').value = idx; document.querySelector('form[action="/pattern"]').submit(); };
-        bar.appendChild(btn);
-      });
-    }
-    // Favorite button logic
-    window.addEventListener('DOMContentLoaded', () => {
-      renderFavPatterns();
-      document.getElementById('favPatternBtn').onclick = function() {
-        const idx = parseInt(document.getElementById('patternSelect').value);
-        toggleFavPattern(idx);
-      };
-    });
-
-    <div class="section">
-      <h3>🎚️ Color Control (HSV)</h3>
-      <form action='/hsv' method='GET'>
-        <label class="label-text">Hue (0-255):</label>
-        <input type='range' min='0' max='255' name='h' value='%HUE%'><br>
-        <label class="label-text">Saturation (0-255):</label>
-        <input type='range' min='0' max='255' name='s' value='%SAT%'><br>
-        <label class="label-text">Brightness (0-255):</label>
-        <input type='range' min='0' max='255' name='v' value='%BRIGHT%'><br>
-        <input type='submit' value='Apply HSV'>
-      </form>
-    </div>
-
-    <div class="section">
-      <h3>⚡ Animation Speed</h3>
-      <form action='/speed' method='GET'>
-        <label class="label-text">Speed (1-100):</label>
-        <input type='range' min='1' max='100' name='s' value='%SPEED%'><br>
-        <input type='submit' value='Set Speed'>
-      </form>
-    </div>
-
-    <div class="section">
-      <h3>🌈 Color Palette</h3>
-      <form action='/palette' method='GET'>
-        <select name='p'>
-          <option value='0'>🌈 Rainbow</option>
-          <option value='1'>🎉 Party</option>
-          <option value='2'>🌊 Ocean</option>
-          <option value='3'>🔥 Heat</option>
-          <option value='4'>🌋 Lava</option>
-        </select><br>
-        <input type='submit' value='Set Palette'>
-      </form>
-    </div>
-
-    <div class="section">
-      <h3>🔄 Auto Cycle</h3>
-      <a href='/autocycle?state=%AUTO_STATE%'><button class='button'>%AUTO_TEXT%</button></a>
-    </div>
-
-    <div class="section">
-      <h3>🔧 Update WiFi Credentials</h3>
-      <form action='/wifi/update' method='GET'>
-        <label class="label-text">SSID:</label>
-        <input type='text' name='ssid' placeholder='New SSID' style='width:90%;padding:8px;border-radius:6px;border:2px solid #667eea;'><br>
-        <label class="label-text">Password:</label>
-        <input type='password' name='pw' placeholder='New Password' style='width:90%;padding:8px;border-radius:6px;border:2px solid #667eea;'><br>
-        <input type='submit' value='Save & Reboot'>
-      </form>
-      <div class="info-box">Updating will save credentials to EEPROM and reboot the device.</div>
-    </div>
-  </div>
-
-  <script>
-    let colorOverrideEnabled = true;
-
-    const detailsEl = document.getElementById('allPatterns');
-    let loadedPatterns = false;
-
-
-    // Color history persistence (LittleFS via API)
-    async function fetchColorHistory() {
-      try { const res = await fetch('/api/colorHistory'); if (!res.ok) return []; return await res.json(); } catch (e) { console.error('fetchColorHistory', e); return []; }
-    }
-    async function saveColorHistoryRemote(arr) {
-      try { const csv = (arr||[]).join(','); const res = await fetch('/api/saveColorHistory?colors=' + encodeURIComponent(csv)); return res.ok; } catch (e) { console.error('saveColorHistoryRemote', e); return false; }
-    }
-    async function addColorToHistory(hex) {
-      try {
-        let hist = await fetchColorHistory();
-        hist = hist.filter(c => c.toLowerCase() !== hex.toLowerCase());
-        hist.unshift(hex);
-        if (hist.length > 12) hist.length = 12;
-        await saveColorHistoryRemote(hist);
-        renderColorHistory();
-      } catch (e) { console.error('addColorToHistory', e); }
-    }
-    async function renderColorHistory() {
-      const hist = await fetchColorHistory();
-      const bar = document.getElementById('colorHistoryBar');
-      if (!bar) return;
-      bar.innerHTML = '';
-      hist.forEach(hex => {
-        const swatch = document.createElement('div');
-        swatch.style.background = hex;
-        swatch.style.width = '32px';
-        swatch.style.height = '32px';
-        swatch.style.margin = '2px';
-        swatch.style.border = '2px solid #667eea';
-        swatch.style.borderRadius = '6px';
-        swatch.style.cursor = 'pointer';
-        swatch.title = hex;
-        swatch.onclick = () => { document.getElementById('colorPicker').value = hex; };
-        bar.appendChild(swatch);
-      });
-    }
-
-    // --- Advanced Color Picker helpers: harmony, conversions, palettes ---
-    function hexToRgb(hex) {
-      hex = hex.replace('#','');
-      return {
-        r: parseInt(hex.substring(0,2),16),
-        g: parseInt(hex.substring(2,4),16),
-        b: parseInt(hex.substring(4,6),16)
-      };
-    }
-
-    function rgbToHex(r,g,b){
-      return '#' + [r,g,b].map(function(x){
-        x = Math.max(0,Math.min(255,Math.round(x)));
-        return ('0'+x.toString(16)).slice(-2);
-      }).join('');
-    }
-
-    function rgbToHsv(r,g,b){
-      r/=255; g/=255; b/=255;
-      var max = Math.max(r,g,b), min = Math.min(r,g,b);
-      var h, s, v = max; var d = max - min;
-      s = max === 0 ? 0 : d / max;
-      if(max === min){ h = 0; } else {
-        switch(max){
-          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-      }
-      return { h: h*360, s: s*100, v: v*100 };
-    }
-
-    function hsvToRgb(h,s,v){
-      h = (h%360 + 360) % 360; s/=100; v/=100;
-      var c = v * s; var x = c * (1 - Math.abs((h/60) % 2 - 1)); var m = v - c;
-      var r1,g1,b1;
-      if(h < 60){ r1=c; g1=x; b1=0; }
-      else if(h < 120){ r1=x; g1=c; b1=0; }
-      else if(h < 180){ r1=0; g1=c; b1=x; }
-      else if(h < 240){ r1=0; g1=x; b1=c; }
-      else if(h < 300){ r1=x; g1=0; b1=c; }
-      else { r1=c; g1=0; b1=x; }
-      return { r: Math.round((r1+m)*255), g: Math.round((g1+m)*255), b: Math.round((b1+m)*255) };
-    }
-
-    function getComplementaryColor(hex){
-      var rgb = hexToRgb(hex);
-      var hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-      hsv.h = (hsv.h + 180) % 360;
-      var c = hsvToRgb(hsv.h, hsv.s, hsv.v);
-      return rgbToHex(c.r,c.g,c.b);
-    }
-
-    function getTriadicColors(hex){
-      var rgb = hexToRgb(hex);
-      var hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-      var a = (hsv.h + 120) % 360; var b = (hsv.h + 240) % 360;
-      var c1 = hsvToRgb(a,hsv.s,hsv.v); var c2 = hsvToRgb(b,hsv.s,hsv.v);
-      return [rgbToHex(c1.r,c1.g,c1.b), rgbToHex(c2.r,c2.g,c2.b)];
-    }
-
-    // Palette storage and simple editor (server-backed via LittleFS API)
-    async function fetchPalettesList(){
-      try { const res = await fetch('/api/palettesList'); if (!res.ok) return []; return await res.json(); } catch (e) { console.error('fetchPalettesList', e); return []; }
-    }
-
-    async function fetchPalette(name){
-      try { const res = await fetch('/api/palette?name=' + encodeURIComponent(name)); if (!res.ok) return null; return await res.json(); } catch (e) { console.error('fetchPalette', e); return null; }
-    }
-
-    async function savePalette(name, colors){
-      if(!name || !colors || !colors.length) return false;
-      try {
-        const csv = colors.join(',');
-        const res = await fetch('/api/savePalette?name=' + encodeURIComponent(name) + '&colors=' + encodeURIComponent(csv));
-        if (res.ok) { renderPalettes(); return true; }
-      } catch (e) { console.error('savePalette', e); }
-      return false;
-    }
-
-    async function deletePalette(name){
-      try { const res = await fetch('/api/deletePalette?name=' + encodeURIComponent(name)); if (res.ok) renderPalettes(); } catch (e) { console.error('deletePalette', e); }
-    }
-
-    async function renderPalettes(){
-      const container = document.getElementById('paletteList');
-      if(!container) return;
-      const list = await fetchPalettesList();
-      container.innerHTML = '';
-      if (!list || list.length === 0) {
-        container.innerHTML = '<span style="color:#888;font-size:3vw;">No saved palettes.</span>';
-        return;
-      }
-      for (const name of list) {
-        const colors = await fetchPalette(name);
-        const row = document.createElement('div'); row.className='palette-row';
-        const label = document.createElement('span'); label.textContent = name; row.appendChild(label);
-        if (colors && colors.length) {
-          colors.forEach(hex => { const sw = document.createElement('span'); sw.className='palette-swatch'; sw.style.background = hex; sw.style.display='inline-block'; sw.style.width='24px'; sw.style.height='24px'; sw.style.margin='2px'; row.appendChild(sw); });
-        }
-        const use = document.createElement('button'); use.textContent='Use'; use.addEventListener('click', function(){ applyPalette(colors); }); row.appendChild(use);
-        const del = document.createElement('button'); del.textContent='Delete'; del.addEventListener('click', function(){ if (confirm('Delete palette ' + name + '?')) deletePalette(name); }); row.appendChild(del);
-        container.appendChild(row);
-      }
-    }
-
-    function applyPalette(colors){ if(!colors || !colors.length) return; document.getElementById('colorPicker').value = colors[0]; addColorToHistory(colors[0]); }
-
-    // Export a palette as JSON file
-    function exportPalette(name, colors){
-      if(!name || !colors || !colors.length) { alert('No palette to export'); return; }
-      const data = { name: name, colors: colors };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = name + '.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
-
-    // Import from textarea: accept JSON array or CSV
-    async function importPaletteFromArea(){
-      const txt = (document.getElementById('importPaletteArea')||{}).value || '';
-      if (!txt.trim()) { alert('Paste JSON array or CSV of colors'); return; }
-      let colors = null;
-      try {
-        const parsed = JSON.parse(txt);
-        if (Array.isArray(parsed)) colors = parsed.map(s=>String(s).trim()).filter(Boolean);
-      } catch(_) {
-        // fallback to CSV
-        colors = txt.split(',').map(s=>s.trim()).filter(Boolean);
-      }
-      if (!colors || colors.length === 0) { alert('No valid colors found'); return; }
-      const name = prompt('Name for imported palette:');
-      if (!name) return;
-      const ok = await savePalette(name, colors);
-      if (ok) { document.getElementById('paletteMsg').textContent = 'Palette saved: ' + name; document.getElementById('paletteMsg').style.display = 'block'; setTimeout(()=>{ document.getElementById('paletteMsg').style.display='none'; }, 3000); }
-    }
-
-
-    function sendColor() {
-      const color = document.getElementById('colorPicker').value;
-      const r = parseInt(color.substr(1, 2), 16);
-      const g = parseInt(color.substr(3, 2), 16);
-      const b = parseInt(color.substr(5, 2), 16);
-
-      fetch(`/setColor?r=${r}&g=${g}&b=${b}`)
-        .then(res => res.text())
-        .then(text => {
-          colorOverrideEnabled = true;
-          addColorToHistory(color);
-          console.log("Color applied:", text);
-          alert("Color applied! " + text);
-        })
-        .catch(err => alert("Error applying color: " + err));
-    }
-
-    // On load, render color history and palettes
-    window.addEventListener('DOMContentLoaded', renderColorHistory);
-    window.addEventListener('DOMContentLoaded', async () => {
-      renderPalettes();
-      // attach save button
-      const saveBtn = document.getElementById('savePaletteBtn');
-      if (saveBtn) saveBtn.addEventListener('click', async () => {
-        const name = (document.getElementById('paletteName') || {}).value || '';
-        const colors = ((document.getElementById('paletteColors') || {}).value || '').split(',').map(s=>s.trim()).filter(Boolean);
-        if (!name || colors.length === 0) { alert('Provide a name and at least one color (comma separated)'); return; }
-        const ok = await savePalette(name, colors);
-        if (ok) {
-          document.getElementById('paletteMsg').textContent = 'Saved palette: ' + name;
-          document.getElementById('paletteMsg').style.display = 'block';
-          setTimeout(()=>{ document.getElementById('paletteMsg').style.display='none'; }, 2500);
-        }
-        document.getElementById('paletteName').value = '';
-        document.getElementById('paletteColors').value = '';
-      });
-      const expBtn = document.getElementById('exportPaletteBtn');
-      if (expBtn) expBtn.addEventListener('click', async () => {
-        const name = (document.getElementById('paletteName') || {}).value || '';
-        const colors = ((document.getElementById('paletteColors') || {}).value || '').split(',').map(s=>s.trim()).filter(Boolean);
-        if (!name) {
-          alert('Enter the palette name to export (or use saved palette list export).');
-          return;
-        }
-        if (colors.length === 0) {
-          // try fetching saved palette
-          const p = await fetchPalette(name);
-          if (!p) { alert('No palette colors available to export'); return; }
-          exportPalette(name, p);
-        } else {
-          exportPalette(name, colors);
-        }
-      });
-      const impBtn = document.getElementById('importPaletteBtn');
-      if (impBtn) impBtn.addEventListener('click', importPaletteFromArea);
-    });
-
-    function toggleColorMode() {
-      fetch('/toggleColorMode')
-        .then(res => res.text())
-        .then(text => {
-          colorOverrideEnabled = false;
-          console.log("Color override disabled:", text);
-          alert("Color override disabled. Patterns will use their default colors.");
-        })
-        .catch(err => alert("Error: " + err));
-    }
-
-    detailsEl.addEventListener('toggle', () => {
-      if (!detailsEl.open || loadedPatterns) return;
-
-      const list = document.getElementById('patternList');
-      list.textContent = 'Loading...';
-
-      fetch('/json/patterns')
-        .then((res) => res.json())
-        .then((data) => {
-          loadedPatterns = true;
-          list.innerHTML = '';
-          data.patterns.forEach((name, index) => {
-            const row = document.createElement('div');
-            row.className = 'pattern-item';
-            row.textContent = `${index}. ${name}`;
-            row.onclick = () => {
-              window.location.href = `/pattern?index=${index}`;
-            };
-            list.appendChild(row);
-          });
-        })
-        .catch(() => {
-          list.textContent = 'Failed to load pattern list.';
-        });
-    });
-  </script>
-</body>
-</html>
-)rawliteral";
-
-  html.replace("%CURRENT_PATTERN%", patternNames[currentPattern]);
-
-  String patternOptions;
-  patternOptions.reserve(TOTAL_PATTERNS * 45);
-  for (int i = 0; i < TOTAL_PATTERNS; i++) {
-    patternOptions += "<option value='" + String(i) + "'";
-    if (i == currentPattern) patternOptions += " selected";
-    patternOptions += ">" + String(i) + ". " + String(patternNames[i]) + "</option>";
-  }
-
-  html.replace("%PATTERN_OPTIONS%", patternOptions);
-  html.replace("%HUE%", String(gHue));
-  html.replace("%SAT%", String(gSat));
-  html.replace("%BRIGHT%", String(gBrightness));
-  html.replace("%SPEED%", String(gSpeed));
-  html.replace("%AUTO_STATE%", String(!autoCycle));
-  html.replace("%AUTO_TEXT%", autoCycle ? "Disable AutoCycle" : "Enable AutoCycle");
-
-  return html;
+static void sendJson(AsyncWebServerRequest *req, int code, const String &payload) {
+  AsyncWebServerResponse *r = req->beginResponse(code, "application/json", payload);
+  r->addHeader("Cache-Control", "no-store");
+  r->addHeader("X-Content-Type-Options", "nosniff");
+  req->send(r);
 }
 
+// Wraps payload in {"success":true,"data":{...}}
+static void sendOk(AsyncWebServerRequest *req, const String &dataJson) {
+  sendJson(req, 200, "{\"success\":true,\"data\":" + dataJson + "}");
+}
+
+// {"success":false,"error":{"code":"...","message":"..."}}
+static void sendErr(AsyncWebServerRequest *req, int code,
+                    const char *errCode, const char *msg) {
+  String j = "{\"success\":false,\"error\":{\"code\":\"";
+  j += errCode;
+  j += "\",\"message\":\"";
+  j += msg;
+  j += "\"}}";
+  sendJson(req, code, j);
+}
+
+// ── LittleFS helpers ──────────────────────────────────────────────────────────
+
+static String readTextFile(const String &path) {
+  if (!LittleFS.exists(path)) return "";
+  File f = LittleFS.open(path, "r");
+  if (!f) return "";
+  String s = f.readString();
+  f.close();
+  return s;
+}
+
+static bool writeTextFile(const String &path, const String &content) {
+  File f = LittleFS.open(path, "w");
+  if (!f) return false;
+  size_t written = f.print(content);
+  f.close();
+  return written == content.length();
+}
+
+// Sanitise a user-supplied name to [A-Za-z0-9_-], max 32 chars.
+static String sanitizeName(const String &input) {
+  String v = input;
+  v.trim();
+  if (v.length() > 32) v = v.substring(0, 32);
+  for (size_t i = 0; i < v.length(); i++) {
+    char c = v.charAt(i);
+    bool ok = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') ||
+              (c >= 'a' && c <= 'z') || c == '_' || c == '-';
+    if (!ok) v.setCharAt(i, '_');
+  }
+  return v.length() > 0 ? v : "default";
+}
+
+// Convert comma-separated string to JSON array of strings.
+static String csvToJsonArray(const String &csv) {
+  String j = "[";
+  bool first = true;
+  int start = 0;
+  while (start <= (int)csv.length()) {
+    int comma = csv.indexOf(',', start);
+    String tok = (comma == -1) ? csv.substring(start) : csv.substring(start, comma);
+    tok.trim();
+    if (tok.length() > 0) {
+      if (!first) j += ',';
+      j += '"';
+      j += tok;
+      j += '"';
+      first = false;
+    }
+    if (comma == -1) break;
+    start = comma + 1;
+  }
+  j += ']';
+  return j;
+}
+
+// ── State JSON builder ────────────────────────────────────────────────────────
+
+static String buildStateJson() {
+  String j = "{";
+  j += "\"pattern\":"    + String(currentPattern)        + ',';
+  j += "\"patternName\":\"" + String(patternName(currentPattern)) + "\",";
+  j += "\"brightness\":" + String(gBrightness)           + ',';
+  j += "\"speed\":"      + String(gSpeed)                + ',';
+  j += "\"hue\":"        + String(gHue)                  + ',';
+  j += "\"saturation\":" + String(gSat)                  + ',';
+  j += "\"autoCycle\":"  + String(autoCycle ? "true" : "false") + ',';
+  j += "\"colorOverride\":" + String(useColorPickerOverride ? "true" : "false") + ',';
+  j += "\"firmware\":\"" + String(FIRMWARE_VERSION)      + '"';
+  j += '}';
+  return j;
+}
+
+// ── Param helpers ─────────────────────────────────────────────────────────────
+
+// Returns true and sets out if param exists and is a valid integer in [lo,hi].
+static bool getIntParam(AsyncWebServerRequest *req, const char *name,
+                        int lo, int hi, int &out) {
+  if (!req->hasParam(name)) return false;
+  String v = req->getParam(name)->value();
+  if (v.length() == 0 || v.length() > 6) return false;
+  for (char c : v) if (c != '-' && (c < '0' || c > '9')) return false;
+  int val = v.toInt();
+  if (val < lo || val > hi) return false;
+  out = val;
+  return true;
+}
+
+// ── Main page HTML ────────────────────────────────────────────────────────────
+// Served from RAM. Pattern options are injected server-side to avoid a
+// round-trip fetch on first load. The rest of the UI uses fetch() for
+// live updates so the HTML itself stays small.
+
+static const char PAGE_HTML[] PROGMEM = R"rawhtml(<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FastLED Controller</title>
+<style>
+:root{--accent:#5c6bc0;--accent2:#7e57c2;--bg:#f0f2f8;--card:#fff;--text:#222;--muted:#666;--border:#dde}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1a2e;--card:#16213e;--text:#e0e0e0;--muted:#aaa;--border:#2a2a4a}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);padding:12px;min-height:100vh}
+h1{font-size:1.3rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.sub{font-size:.8rem;color:var(--muted);margin-bottom:16px}
+.card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.card h2{font-size:.95rem;font-weight:600;margin-bottom:12px;color:var(--accent)}
+label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px;margin-top:10px}
+label:first-of-type{margin-top:0}
+input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+select{width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:.9rem;cursor:pointer}
+.btn{display:inline-block;padding:9px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn.secondary{background:var(--border);color:var(--text)}
+.btn.danger{background:#e53935;color:#fff}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.val{font-size:.85rem;font-weight:600;color:var(--accent);margin-left:6px}
+#status-bar{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);margin-bottom:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:#4caf50;flex-shrink:0}
+.dot.off{background:#e53935}
+.dot.warn{background:#ff9800}
+#pattern-name{font-weight:700;color:var(--accent)}
+details summary{cursor:pointer;font-size:.85rem;color:var(--accent);font-weight:600;padding:4px 0;user-select:none}
+#pattern-list{margin-top:8px;max-height:220px;overflow-y:auto;border:1.5px solid var(--border);border-radius:8px}
+.pi{padding:8px 12px;font-size:.85rem;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.pi:last-child{border-bottom:none}
+.pi:hover{background:rgba(92,107,192,.1)}
+.pi.active{font-weight:700;color:var(--accent)}
+input[type=color]{width:60px;height:36px;border:2px solid var(--border);border-radius:8px;cursor:pointer;padding:2px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.info{font-size:.75rem;color:var(--muted);margin-top:6px}
+input[type=text],input[type=password]{width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:.9rem;margin-top:4px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 20px;border-radius:8px;font-size:.85rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<h1>FastLED Controller</h1>
+<div class="sub">Firmware %FW_VER%</div>
+
+<div id="status-bar">
+  <span class="dot" id="conn-dot"></span>
+  <span id="conn-label">Connecting...</span>
+  &nbsp;|&nbsp;
+  Pattern: <span id="pattern-name">—</span>
+  &nbsp;|&nbsp;
+  Heap: <span id="heap">—</span>
+</div>
+
+<div class="card">
+  <h2>Pattern</h2>
+  <select id="pattern-sel">%PATTERN_OPTIONS%</select>
+  <div class="btn-row">
+    <button class="btn" onclick="applyPattern()">Apply</button>
+    <button class="btn secondary" onclick="nextPattern()">Next ›</button>
+  </div>
+  <details style="margin-top:12px">
+    <summary>Browse all patterns</summary>
+    <div id="pattern-list"><em style="padding:8px;display:block;color:var(--muted)">Loading...</em></div>
+  </details>
+</div>
+
+<div class="card">
+  <h2>Color &amp; Brightness</h2>
+  <label>Hue <span class="val" id="hue-val">%HUE%</span></label>
+  <input type="range" id="hue" min="0" max="255" value="%HUE%" oninput="sliderInput('hue-val',this.value)">
+  <label>Saturation <span class="val" id="sat-val">%SAT%</span></label>
+  <input type="range" id="sat" min="0" max="255" value="%SAT%" oninput="sliderInput('sat-val',this.value)">
+  <label>Brightness <span class="val" id="bright-val">%BRIGHT%</span></label>
+  <input type="range" id="bright" min="0" max="255" value="%BRIGHT%" oninput="sliderInput('bright-val',this.value)">
+  <div class="btn-row"><button class="btn" onclick="applyHSV()">Apply</button></div>
+  <label style="margin-top:14px">Color override</label>
+  <div class="row">
+    <input type="color" id="color-pick" value="#ff0000">
+    <button class="btn" onclick="applyColor()">Apply color</button>
+    <button class="btn secondary" onclick="clearColor()">Clear override</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Speed</h2>
+  <label>Speed (1–100) <span class="val" id="speed-val">%SPEED%</span></label>
+  <input type="range" id="speed" min="1" max="100" value="%SPEED%" oninput="sliderInput('speed-val',this.value)">
+  <div class="btn-row"><button class="btn" onclick="applySpeed()">Apply</button></div>
+</div>
+
+<div class="card">
+  <h2>Palette</h2>
+  <select id="palette-sel">
+    <option value="0">Rainbow</option>
+    <option value="1">Party</option>
+    <option value="2">Ocean</option>
+    <option value="3">Heat</option>
+    <option value="4">Lava</option>
+  </select>
+  <div class="btn-row"><button class="btn" onclick="applyPalette()">Apply</button></div>
+</div>
+
+<div class="card">
+  <h2>Auto-cycle</h2>
+  <p class="info">Automatically advances to the next pattern every ~13 s.</p>
+  <div class="btn-row">
+    <button class="btn" id="ac-btn" onclick="toggleAutoCycle()">—</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>OTA Update</h2>
+  <p class="info">Flash new firmware over Wi-Fi using Arduino IDE or arduino-cli.<br>
+  Hostname: <strong>%HOSTNAME%.local</strong> &nbsp;|&nbsp; Port: 8266</p>
+</div>
+
+<div class="card">
+  <h2>Wi-Fi Credentials</h2>
+  <p class="info">Saved to EEPROM. Device reboots after saving.</p>
+  <label>SSID</label>
+  <input type="text" id="wifi-ssid" maxlength="31" placeholder="Network name">
+  <label>Password</label>
+  <input type="password" id="wifi-pw" maxlength="63" placeholder="Password">
+  <div class="btn-row">
+    <button class="btn danger" onclick="saveWifi()">Save &amp; Reboot</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var state = {};
+
+function toast(msg, dur) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, dur || 2500);
+}
+
+function sliderInput(id, v) { document.getElementById(id).textContent = v; }
+
+function post(url, body) {
+  return fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: body
+  }).then(function(r){ return r.json(); });
+}
+
+function get(url) { return fetch(url).then(function(r){ return r.json(); }); }
+
+function applyState(s) {
+  state = s;
+  document.getElementById('pattern-name').textContent = s.patternName || s.pattern;
+  document.getElementById('heap').textContent = (s.freeHeap ? Math.round(s.freeHeap/1024)+'KB' : '—');
+  document.getElementById('ac-btn').textContent = s.autoCycle ? 'Disable auto-cycle' : 'Enable auto-cycle';
+  var sel = document.getElementById('pattern-sel');
+  if (sel.value != s.pattern) sel.value = s.pattern;
+  document.getElementById('hue').value = s.hue;
+  document.getElementById('hue-val').textContent = s.hue;
+  document.getElementById('sat').value = s.saturation;
+  document.getElementById('sat-val').textContent = s.saturation;
+  document.getElementById('bright').value = s.brightness;
+  document.getElementById('bright-val').textContent = s.brightness;
+  document.getElementById('speed').value = s.speed;
+  document.getElementById('speed-val').textContent = s.speed;
+}
+
+function refreshStatus() {
+  get('/json/status').then(function(r){
+    if (r.success) {
+      applyState(r.data);
+      document.getElementById('conn-dot').className = 'dot';
+      document.getElementById('conn-label').textContent = 'Connected';
+    }
+  }).catch(function(){
+    document.getElementById('conn-dot').className = 'dot off';
+    document.getElementById('conn-label').textContent = 'Offline';
+  });
+}
+
+function applyPattern() {
+  var idx = document.getElementById('pattern-sel').value;
+  post('/json/pattern', 'index='+idx).then(function(r){
+    if (r.success) { applyState(r.data); toast('Pattern applied'); }
+    else toast(r.error.message);
+  }).catch(function(){ toast('Request failed'); });
+}
+
+function nextPattern() {
+  post('/next', '').then(function(r){
+    if (r.success) applyState(r.data);
+  }).catch(function(){});
+}
+
+function applyHSV() {
+  var h = document.getElementById('hue').value;
+  var s = document.getElementById('sat').value;
+  var v = document.getElementById('bright').value;
+  post('/json/color', 'h='+h+'&s='+s+'&v='+v).then(function(r){
+    if (r.success) { applyState(r.data); toast('Color applied'); }
+    else toast(r.error.message);
+  }).catch(function(){ toast('Request failed'); });
+}
+
+function applyColor() {
+  var hex = document.getElementById('color-pick').value;
+  var r = parseInt(hex.substr(1,2),16);
+  var g = parseInt(hex.substr(3,2),16);
+  var b = parseInt(hex.substr(5,2),16);
+  post('/setColor', 'r='+r+'&g='+g+'&b='+b).then(function(res){
+    if (res.success) toast('Color override applied');
+    else toast(res.error.message);
+  }).catch(function(){ toast('Request failed'); });
+}
+
+function clearColor() {
+  post('/toggleColorMode', '').then(function(r){
+    if (r.success) toast('Color override cleared');
+  }).catch(function(){});
+}
+
+function applySpeed() {
+  var s = document.getElementById('speed').value;
+  post('/json/speed', 's='+s).then(function(r){
+    if (r.success) { applyState(r.data); toast('Speed applied'); }
+    else toast(r.error.message);
+  }).catch(function(){ toast('Request failed'); });
+}
+
+function applyPalette() {
+  var p = document.getElementById('palette-sel').value;
+  post('/palette', 'p='+p).then(function(r){
+    if (r.success) toast('Palette applied');
+    else toast(r.error.message);
+  }).catch(function(){ toast('Request failed'); });
+}
+
+function toggleAutoCycle() {
+  var next = state.autoCycle ? '0' : '1';
+  post('/json/auto-cycle', 'state='+next).then(function(r){
+    if (r.success) { applyState(r.data); toast('Auto-cycle updated'); }
+    else toast(r.error.message);
+  }).catch(function(){ toast('Request failed'); });
+}
+
+function saveWifi() {
+  var s = document.getElementById('wifi-ssid').value.trim();
+  var p = document.getElementById('wifi-pw').value;
+  if (!s) { toast('SSID cannot be empty'); return; }
+  if (!confirm('Save credentials and reboot?')) return;
+  post('/wifi/update', 'ssid='+encodeURIComponent(s)+'&pw='+encodeURIComponent(p))
+    .then(function(r){
+      if (r.success) toast('Saved — rebooting...');
+      else toast(r.error.message);
+    }).catch(function(){ toast('Request failed'); });
+}
+
+// Lazy-load pattern list when details opens.
+var patternListLoaded = false;
+document.querySelector('details').addEventListener('toggle', function(e){
+  if (!e.target.open || patternListLoaded) return;
+  patternListLoaded = true;
+  get('/json/patterns').then(function(r){
+    var list = document.getElementById('pattern-list');
+    list.innerHTML = '';
+    var patterns = r.success ? r.data.patterns : r.patterns;
+    patterns.forEach(function(name, i){
+      var d = document.createElement('div');
+      d.className = 'pi' + (i === state.pattern ? ' active' : '');
+      d.textContent = i + '. ' + name;
+      d.onclick = function(){
+        document.getElementById('pattern-sel').value = i;
+        applyPattern();
+      };
+      list.appendChild(d);
+    });
+  }).catch(function(){
+    document.getElementById('pattern-list').innerHTML =
+      '<em style="padding:8px;display:block;color:var(--muted)">Failed to load</em>';
+  });
+});
+
+// Poll status every 5 s.
+refreshStatus();
+setInterval(refreshStatus, 5000);
+</script>
+</body>
+</html>
+)rawhtml";
+
+// ── Page builder ──────────────────────────────────────────────────────────────
+
+static String buildMainPageHtml() {
+  // Build <option> list server-side (avoids a fetch on first load).
+  String opts;
+  opts.reserve(TOTAL_PATTERNS * 50);
+  for (int i = 0; i < TOTAL_PATTERNS; i++) {
+    opts += "<option value='";
+    opts += i;
+    opts += '\'';
+    if (i == currentPattern) opts += " selected";
+    opts += '>';
+    opts += i;
+    opts += ". ";
+    opts += patternName(i);
+    opts += "</option>";
+  }
+
+  String page = FPSTR(PAGE_HTML);
+  page.replace("%FW_VER%",         FIRMWARE_VERSION);
+  page.replace("%PATTERN_OPTIONS%", opts);
+  page.replace("%HUE%",            String(gHue));
+  page.replace("%SAT%",            String(gSat));
+  page.replace("%BRIGHT%",         String(gBrightness));
+  page.replace("%SPEED%",          String(gSpeed));
+  page.replace("%HOSTNAME%",       DEVICE_HOSTNAME);
+  return page;
+}
+
+// ── Route setup ───────────────────────────────────────────────────────────────
+
 void setupWebServer() {
-  extern bool saveWifiToEEPROM(const String &newSsid, const String &newPassword);
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/html", buildMainPageHtml());
+
+  // ── GET / ─────────────────────────────────────────────────────────────────
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *req) {
+    req->send(200, "text/html", buildMainPageHtml());
   });
 
-  server.on("/setColor", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("r") && request->hasParam("g") && request->hasParam("b")) {
-      uint8_t r = request->getParam("r")->value().toInt();
-      uint8_t g = request->getParam("g")->value().toInt();
-      uint8_t b = request->getParam("b")->value().toInt();
-      
-      setColorPickerColor(r, g, b);
-      fill_solid(leds, NUM_LEDS, CRGB(r, g, b));
-      FastLED.show();
-
-      request->send(200, "text/plain", "Color received and applied!");
-    } else {
-      request->send(400, "text/plain", "Missing parameters");
-    }
+  // ── GET /json/status ──────────────────────────────────────────────────────
+  server.on("/json/status", HTTP_GET, [](AsyncWebServerRequest *req) {
+    String d = buildStateJson();
+    // Inject heap into state JSON (remove trailing } and add field).
+    d.remove(d.length() - 1);
+    d += ",\"freeHeap\":" + String(ESP.getFreeHeap()) + '}';
+    sendOk(req, d);
   });
 
-  server.on("/toggleColorMode", HTTP_GET, [](AsyncWebServerRequest *request) {
-    useColorPickerOverride = false;
-    request->send(200, "text/plain", "Color override disabled");
+  // ── GET /json/health ──────────────────────────────────────────────────────
+  server.on("/json/health", HTTP_GET, [](AsyncWebServerRequest *req) {
+    String d = "{";
+    d += "\"uptime\":"       + String(millis() / 1000)                    + ',';
+    d += "\"freeHeap\":"     + String(ESP.getFreeHeap())                  + ',';
+    d += "\"wifiConnected\":" + String(WiFi.status()==WL_CONNECTED?"true":"false") + ',';
+    d += "\"wifiRssi\":"     + String(WiFi.RSSI())                        + ',';
+    d += "\"ip\":\""         + WiFi.localIP().toString()                  + "\",";
+    d += "\"firmware\":\""   + String(FIRMWARE_VERSION)                   + '"';
+    d += '}';
+    sendOk(req, d);
   });
 
-  server.on("/pattern", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("index")) {
-      int requestedPattern = request->getParam("index")->value().toInt();
-      if (requestedPattern >= 0 && requestedPattern < TOTAL_PATTERNS) {
-        currentPattern = requestedPattern;
-        lastChange = millis();
-      }
-    }
-    request->redirect("/");
-  });
-
-  server.on("/hsv", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("h")) gHue = constrain(request->getParam("h")->value().toInt(), 0, 255);
-    if (request->hasParam("s")) gSat = constrain(request->getParam("s")->value().toInt(), 0, 255);
-    if (request->hasParam("v")) {
-      gBrightness = constrain(request->getParam("v")->value().toInt(), 0, 255);
-      FastLED.setBrightness(gBrightness);
-    }
-    request->redirect("/");
-  });
-
-  server.on("/autocycle", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("state")) autoCycle = request->getParam("state")->value().toInt();
-    request->redirect("/");
-  });
-
-  server.on("/next", HTTP_GET, [](AsyncWebServerRequest *request) {
-    currentPattern = (currentPattern + 1) % TOTAL_PATTERNS;
-    request->redirect("/");
-  });
-
-  server.on("/brightness", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("b")) {
-      gBrightness = constrain(request->getParam("b")->value().toInt(), 0, 255);
-      FastLED.setBrightness(gBrightness);
-    }
-    request->redirect("/");
-  });
-
-  server.on("/speed", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("s")) {
-      gSpeed = constrain(request->getParam("s")->value().toInt(), 1, 100);
-    }
-    request->redirect("/");
-  });
-
-  server.on("/json/status", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String json = "{";
-    json += "\"pattern\":" + String(currentPattern) + ",";
-    json += "\"hue\":" + String(gHue) + ",";
-    json += "\"saturation\":" + String(gSat) + ",";
-    json += "\"brightness\":" + String(gBrightness) + ",";
-    json += "\"autoCycle\":" + String(autoCycle) + ",";
-    json += "\"colorOverride\":" + String(useColorPickerOverride);
-    json += "}";
-    request->send(200, "application/json", json);
-  });
-
-  server.on("/json/patterns", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String json = "{\"patterns\":[";
+  // ── GET /json/patterns ────────────────────────────────────────────────────
+  server.on("/json/patterns", HTTP_GET, [](AsyncWebServerRequest *req) {
+    String j = "{\"patterns\":[";
     for (int i = 0; i < TOTAL_PATTERNS; i++) {
-      json += "\"";
-      json += patternNames[i];
-      json += "\"";
-      if (i < TOTAL_PATTERNS - 1) {
-        json += ",";
-      }
+      if (i) j += ',';
+      j += '"';
+      j += patternName(i);
+      j += '"';
     }
-    json += "]}";
-    request->send(200, "application/json", json);
+    j += "]}";
+    // Wrap in success envelope for consistency; also keep bare array for
+    // backward-compat clients that read .patterns directly.
+    sendOk(req, j);
   });
 
-  server.on("/palette", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("p")) {
-      int paletteIndex = request->getParam("p")->value().toInt();
-      switch (paletteIndex) {
-        case 0: currentPalette = RainbowColors_p; break;
-        case 1: currentPalette = PartyColors_p; break;
-        case 2: currentPalette = OceanColors_p; break;
-        case 3: currentPalette = HeatColors_p; break;
-        case 4: currentPalette = LavaColors_p; break;
-      }
+  // ── POST /json/pattern ────────────────────────────────────────────────────
+  server.on("/json/pattern", HTTP_POST, [](AsyncWebServerRequest *req) {
+    int idx;
+    if (!getIntParam(req, "index", 0, TOTAL_PATTERNS - 1, idx)) {
+      sendErr(req, 400, "INVALID_VALUE",
+              "index must be 0–" + String(TOTAL_PATTERNS - 1));
+      return;
     }
-    request->redirect("/");
+    currentPattern = idx;
+    lastChange = millis();
+    markSettingsDirty();
+    sendOk(req, buildStateJson());
   });
 
-  server.on("/wifi/update", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("ssid") && request->hasParam("pw")) {
-      String ns = request->getParam("ssid")->value();
-      String pw = request->getParam("pw")->value();
-      if (ns.length() == 0) {
-        request->send(400, "text/plain", "SSID cannot be empty");
-        return;
-      }
-      bool ok = saveWifiToEEPROM(ns, pw);
-      if (ok) {
-        request->send(200, "text/plain", "Saved credentials, rebooting...");
-        delay(500);
-        ESP.restart();
-      } else {
-        request->send(500, "text/plain", "Failed to save credentials");
-      }
-    } else {
-      request->send(400, "text/plain", "Missing ssid or pw");
+  // ── POST /json/color (HSV) ────────────────────────────────────────────────
+  server.on("/json/color", HTTP_POST, [](AsyncWebServerRequest *req) {
+    int h, s, v;
+    bool changed = false;
+    if (getIntParam(req, "h", 0, 255, h)) { gHue = h; changed = true; }
+    if (getIntParam(req, "s", 0, 255, s)) { gSat = s; changed = true; }
+    if (getIntParam(req, "v", 0, 255, v)) {
+      gBrightness = v;
+      FastLED.setBrightness(gBrightness);
+      changed = true;
     }
+    if (!changed) { sendErr(req, 400, "MISSING_PARAM", "Provide h, s, or v"); return; }
+    markSettingsDirty();
+    sendOk(req, buildStateJson());
   });
 
-  // --- Persistent config endpoints (palettes, favorites, colors) ---
-  auto sanitizeName = [](const String &in)->String {
-    String s = in;
-    for (size_t i = 0; i < s.length(); i++) {
-      char c = s.charAt(i);
-      if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || c == '-')) {
-        s.setCharAt(i, '_');
-      }
+  // ── POST /json/speed ──────────────────────────────────────────────────────
+  server.on("/json/speed", HTTP_POST, [](AsyncWebServerRequest *req) {
+    int s;
+    if (!getIntParam(req, "s", 1, 100, s)) {
+      sendErr(req, 400, "INVALID_VALUE", "speed must be 1–100");
+      return;
     }
-    return s;
-  };
+    gSpeed = s;
+    markSettingsDirty();
+    sendOk(req, buildStateJson());
+  });
 
-  server.on("/api/palettesList", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String json = "[";
+  // ── POST /json/auto-cycle ─────────────────────────────────────────────────
+  server.on("/json/auto-cycle", HTTP_POST, [](AsyncWebServerRequest *req) {
+    int s;
+    if (!getIntParam(req, "state", 0, 1, s)) {
+      sendErr(req, 400, "INVALID_VALUE", "state must be 0 or 1");
+      return;
+    }
+    autoCycle = (s == 1);
+    markSettingsDirty();
+    sendOk(req, buildStateJson());
+  });
+
+  // ── POST /setColor (RGB override) ─────────────────────────────────────────
+  server.on("/setColor", HTTP_POST, [](AsyncWebServerRequest *req) {
+    int r, g, b;
+    if (!getIntParam(req, "r", 0, 255, r) ||
+        !getIntParam(req, "g", 0, 255, g) ||
+        !getIntParam(req, "b", 0, 255, b)) {
+      sendErr(req, 400, "INVALID_VALUE", "r, g, b must be 0–255");
+      return;
+    }
+    setColorPickerColor(r, g, b);
+    fill_solid(leds, NUM_LEDS, CRGB(r, g, b));
+    FastLED.show();
+    sendOk(req, buildStateJson());
+  });
+
+  // ── POST /toggleColorMode ─────────────────────────────────────────────────
+  server.on("/toggleColorMode", HTTP_POST, [](AsyncWebServerRequest *req) {
+    useColorPickerOverride = false;
+    sendOk(req, buildStateJson());
+  });
+
+  // ── POST /next ────────────────────────────────────────────────────────────
+  server.on("/next", HTTP_POST, [](AsyncWebServerRequest *req) {
+    currentPattern = (currentPattern + 1) % TOTAL_PATTERNS;
+    lastChange = millis();
+    markSettingsDirty();
+    sendOk(req, buildStateJson());
+  });
+
+  // ── POST /palette ─────────────────────────────────────────────────────────
+  server.on("/palette", HTTP_POST, [](AsyncWebServerRequest *req) {
+    int p;
+    if (!getIntParam(req, "p", 0, 4, p)) {
+      sendErr(req, 400, "INVALID_VALUE", "palette index must be 0–4");
+      return;
+    }
+    switch (p) {
+      case 0: currentPalette = RainbowColors_p; break;
+      case 1: currentPalette = PartyColors_p;   break;
+      case 2: currentPalette = OceanColors_p;   break;
+      case 3: currentPalette = HeatColors_p;    break;
+      case 4: currentPalette = LavaColors_p;    break;
+    }
+    sendOk(req, buildStateJson());
+  });
+
+  // ── POST /wifi/update ─────────────────────────────────────────────────────
+  // Credentials sent in POST body, not URL, to keep them out of server logs.
+  server.on("/wifi/update", HTTP_POST, [](AsyncWebServerRequest *req) {
+    if (!req->hasParam("ssid", true) || !req->hasParam("pw", true)) {
+      sendErr(req, 400, "MISSING_PARAM", "ssid and pw required");
+      return;
+    }
+    String ns = req->getParam("ssid", true)->value();
+    String pw = req->getParam("pw",   true)->value();
+    ns.trim();
+    if (ns.length() == 0 || ns.length() > 31) {
+      sendErr(req, 400, "INVALID_VALUE", "SSID must be 1–31 characters");
+      return;
+    }
+    if (pw.length() > 63) {
+      sendErr(req, 400, "INVALID_VALUE", "Password must be ≤63 characters");
+      return;
+    }
+    if (!saveWifiToEEPROM(ns, pw)) {
+      sendErr(req, 500, "STORAGE_ERROR", "Failed to save credentials");
+      return;
+    }
+    sendOk(req, "{\"message\":\"Saved — rebooting\"}");
+    delay(400);
+    ESP.restart();
+  });
+
+  // ── Palette persistence (LittleFS) ───────────────────────────────────────
+
+  server.on("/api/palettesList", HTTP_GET, [](AsyncWebServerRequest *req) {
+    String j = "[";
     bool first = true;
     Dir dir = LittleFS.openDir("/");
     while (dir.next()) {
-      String fname = dir.fileName();
-      if (fname.startsWith("/palette_")) {
-        String pname = fname.substring(9); // strip /palette_
-        if (pname.endsWith(".txt")) pname = pname.substring(0, pname.length() - 4);
-        if (!first) json += ",";
-        json += "\"" + pname + "\"";
-        first = false;
-      }
+      String fn = dir.fileName();
+      if (!fn.startsWith("/palette_")) continue;
+      String name = fn.substring(9);
+      if (name.endsWith(".txt")) name = name.substring(0, name.length() - 4);
+      if (!first) j += ',';
+      j += '"'; j += name; j += '"';
+      first = false;
     }
-    json += "]";
-    request->send(200, "application/json", json);
+    j += ']';
+    sendOk(req, j);
   });
 
-  server.on("/api/palette", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (!request->hasParam("name")) { request->send(400, "text/plain", "Missing name"); return; }
-    String name = request->getParam("name")->value();
-    String safe = sanitizeName(name);
-    String path = "/palette_" + safe + ".txt";
-    if (!LittleFS.exists(path)) { request->send(404, "text/plain", "Palette not found"); return; }
-    File f = LittleFS.open(path, "r");
-    String content = f.readString();
-    f.close();
-    // build JSON array
-    String json = "[";
-    bool first = true;
-    int start = 0;
-    while (start < content.length()) {
-      int comma = content.indexOf(',', start);
-      String token;
-      if (comma == -1) token = content.substring(start);
-      else token = content.substring(start, comma);
-      token.trim();
-      if (token.length() > 0) {
-        if (!first) json += ",";
-        json += "\"" + token + "\"";
-        first = false;
-      }
-      if (comma == -1) break;
-      start = comma + 1;
+  server.on("/api/palette", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!req->hasParam("name")) { sendErr(req, 400, "MISSING_PARAM", "name required"); return; }
+    String path = "/palette_" + sanitizeName(req->getParam("name")->value()) + ".txt";
+    if (!LittleFS.exists(path)) { sendErr(req, 404, "NOT_FOUND", "Palette not found"); return; }
+    sendOk(req, csvToJsonArray(readTextFile(path)));
+  });
+
+  server.on("/api/savePalette", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!req->hasParam("name") || !req->hasParam("colors")) {
+      sendErr(req, 400, "MISSING_PARAM", "name and colors required"); return;
     }
-    json += "]";
-    request->send(200, "application/json", json);
+    String colors = req->getParam("colors")->value();
+    if (colors.length() > 512) { sendErr(req, 400, "INVALID_VALUE", "colors too long"); return; }
+    String path = "/palette_" + sanitizeName(req->getParam("name")->value()) + ".txt";
+    if (!writeTextFile(path, colors)) { sendErr(req, 500, "STORAGE_ERROR", "Write failed"); return; }
+    sendOk(req, "{}");
   });
 
-  server.on("/api/savePalette", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (!request->hasParam("name") || !request->hasParam("colors")) { request->send(400, "text/plain", "Missing params"); return; }
-    String name = request->getParam("name")->value();
-    String colors = request->getParam("colors")->value();
-    String safe = sanitizeName(name);
-    String path = "/palette_" + safe + ".txt";
-    File f = LittleFS.open(path, "w");
-    if (!f) { request->send(500, "text/plain", "Failed to open file"); return; }
-    f.print(colors);
-    f.close();
-    request->send(200, "text/plain", "OK");
+  server.on("/api/deletePalette", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!req->hasParam("name")) { sendErr(req, 400, "MISSING_PARAM", "name required"); return; }
+    String path = "/palette_" + sanitizeName(req->getParam("name")->value()) + ".txt";
+    if (!LittleFS.exists(path)) { sendErr(req, 404, "NOT_FOUND", "Not found"); return; }
+    LittleFS.remove(path);
+    sendOk(req, "{}");
   });
 
-  server.on("/api/deletePalette", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (!request->hasParam("name")) { request->send(400, "text/plain", "Missing name"); return; }
-    String safe = sanitizeName(request->getParam("name")->value());
-    String path = "/palette_" + safe + ".txt";
-    if (LittleFS.exists(path)) { LittleFS.remove(path); request->send(200, "text/plain", "Deleted"); }
-    else request->send(404, "text/plain", "Not found");
+  // ── Favorites & color history (LittleFS) ─────────────────────────────────
+
+  server.on("/api/favorites", HTTP_GET, [](AsyncWebServerRequest *req) {
+    sendOk(req, csvToJsonArray(readTextFile("/favorites.txt")));
   });
 
-  server.on("/api/favorites", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String path = "/favorites.txt";
-    if (!LittleFS.exists(path)) { request->send(200, "application/json", "[]"); return; }
-    File f = LittleFS.open(path, "r"); String content = f.readString(); f.close();
-    // content expected as comma-separated indices
-    String json = "[";
-    bool first = true;
-    int start = 0;
-    while (start < content.length()) {
-      int comma = content.indexOf(',', start);
-      String token;
-      if (comma == -1) token = content.substring(start);
-      else token = content.substring(start, comma);
-      token.trim();
-      if (token.length() > 0) {
-        if (!first) json += ",";
-        json += token;
-        first = false;
-      }
-      if (comma == -1) break;
-      start = comma + 1;
-    }
-    json += "]";
-    request->send(200, "application/json", json);
+  server.on("/api/saveFavorites", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!req->hasParam("fav")) { sendErr(req, 400, "MISSING_PARAM", "fav required"); return; }
+    String v = req->getParam("fav")->value();
+    if (v.length() > 256) { sendErr(req, 400, "INVALID_VALUE", "too long"); return; }
+    if (!writeTextFile("/favorites.txt", v)) { sendErr(req, 500, "STORAGE_ERROR", "Write failed"); return; }
+    sendOk(req, "{}");
   });
 
-  server.on("/api/saveFavorites", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (!request->hasParam("fav")) { request->send(400, "text/plain", "Missing fav param"); return; }
-    String fav = request->getParam("fav")->value();
-    File f = LittleFS.open("/favorites.txt", "w"); if (!f) { request->send(500, "text/plain", "Failed to save"); return; }
-    f.print(fav); f.close(); request->send(200, "text/plain", "OK");
+  server.on("/api/favColors", HTTP_GET, [](AsyncWebServerRequest *req) {
+    sendOk(req, csvToJsonArray(readTextFile("/fav_colors.txt")));
   });
 
-  server.on("/api/favColors", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String path = "/fav_colors.txt";
-    if (!LittleFS.exists(path)) { request->send(200, "application/json", "[]"); return; }
-    File f = LittleFS.open(path, "r"); String content = f.readString(); f.close();
-    // split and return JSON array
-    String json = "[";
-    bool first = true; int start = 0;
-    while (start < content.length()) {
-      int comma = content.indexOf(',', start);
-      String token;
-      if (comma == -1) token = content.substring(start);
-      else token = content.substring(start, comma);
-      token.trim();
-      if (token.length() > 0) {
-        if (!first) json += ",";
-        json += "\"" + token + "\"";
-        first = false;
-      }
-      if (comma == -1) break;
-      start = comma + 1;
-    }
-    json += "]";
-    request->send(200, "application/json", json);
+  server.on("/api/saveFavColors", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!req->hasParam("colors")) { sendErr(req, 400, "MISSING_PARAM", "colors required"); return; }
+    String v = req->getParam("colors")->value();
+    if (v.length() > 256) { sendErr(req, 400, "INVALID_VALUE", "too long"); return; }
+    if (!writeTextFile("/fav_colors.txt", v)) { sendErr(req, 500, "STORAGE_ERROR", "Write failed"); return; }
+    sendOk(req, "{}");
   });
 
-  server.on("/api/saveFavColors", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (!request->hasParam("colors")) { request->send(400, "text/plain", "Missing colors param"); return; }
-    String colors = request->getParam("colors")->value();
-    File f = LittleFS.open("/fav_colors.txt", "w"); if (!f) { request->send(500, "text/plain", "Failed to save"); return; }
-    f.print(colors); f.close(); request->send(200, "text/plain", "OK");
+  server.on("/api/colorHistory", HTTP_GET, [](AsyncWebServerRequest *req) {
+    sendOk(req, csvToJsonArray(readTextFile("/color_history.txt")));
   });
 
-  server.on("/api/colorHistory", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String path = "/color_history.txt";
-    if (!LittleFS.exists(path)) { request->send(200, "application/json", "[]"); return; }
-    File f = LittleFS.open(path, "r"); String content = f.readString(); f.close();
-    String json = "[";
-    bool first = true;
-    int start = 0;
-    while (start < content.length()) {
-      int comma = content.indexOf(',', start);
-      String token;
-      if (comma == -1) token = content.substring(start);
-      else token = content.substring(start, comma);
-      token.trim();
-      if (token.length() > 0) {
-        if (!first) json += ",";
-        json += "\"" + token + "\"";
-        first = false;
-      }
-      if (comma == -1) break;
-      start = comma + 1;
-    }
-    json += "]";
-    request->send(200, "application/json", json);
+  server.on("/api/saveColorHistory", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!req->hasParam("colors")) { sendErr(req, 400, "MISSING_PARAM", "colors required"); return; }
+    String v = req->getParam("colors")->value();
+    if (v.length() > 512) { sendErr(req, 400, "INVALID_VALUE", "too long"); return; }
+    if (!writeTextFile("/color_history.txt", v)) { sendErr(req, 500, "STORAGE_ERROR", "Write failed"); return; }
+    sendOk(req, "{}");
   });
 
-  server.on("/api/saveColorHistory", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (!request->hasParam("colors")) { request->send(400, "text/plain", "Missing colors param"); return; }
-    String colors = request->getParam("colors")->value();
-    File f = LittleFS.open("/color_history.txt", "w"); if (!f) { request->send(500, "text/plain", "Failed to save"); return; }
-    f.print(colors); f.close(); request->send(200, "text/plain", "OK");
+  // ── 404 catch-all ─────────────────────────────────────────────────────────
+  server.onNotFound([](AsyncWebServerRequest *req) {
+    sendErr(req, 404, "NOT_FOUND", "Endpoint not found");
   });
-
 
   server.begin();
+  LOG_INFO("Web server started");
 }

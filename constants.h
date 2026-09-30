@@ -1,139 +1,71 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define LED_PIN D2
-#define NUM_LEDS 168
-#define BRIGHTNESS 128
-#define LED_TYPE WS2812B
-#define COLOR_ORDER GRB
+// ── Firmware version ─────────────────────────────────────────────────────────
+#define FIRMWARE_VERSION "3.0.0"
 
-const unsigned long WIFI_CONNECT_TIMEOUT_MS = 10000;
-const unsigned long AUTO_CYCLE_INTERVAL_MS = 12750;
+// ── Hardware ──────────────────────────────────────────────────────────────────
+// Change these to match your wiring and strip.
+#define LED_PIN        D2          // GPIO4 on NodeMCU/Wemos D1 Mini
+#define NUM_LEDS       168
+#define LED_TYPE       WS2812B
+#define COLOR_ORDER    GRB
 
-const char *patternNames[] = {
-  // Rainbow & Color Cycling
-  "Rainbow Cycle",
-  "Rainbow Glitter",
-  "Rainbow Pulse",
-  "Rainbow Sparkle",
-  "Color Sweep",
-  "Color Fade",
-  "Color Waves",
-  "Gradient Wave",
-  "Palette Cycle",
-  
-  // Movement & Chase
-  "Moving Dot",
-  "Comet Tail",
-  "Sinelon",
-  "Chase Rainbow",
-  "Cylon Bounce",
-  "Bounce Comets",
-  "Wave Glide",
-  "Dot Trail",
-  
-  // Dynamic & Interactive
-  "Confetti",
-  "Confetti Pulse",
-  "Juggle",
-  "Twinkle",
-  "Twinkle Fade",
-  "Dazzle",
-  "Glitter Fade",
-  "Sparkle",
-  "Pixel Pop",
-  
-  // Breathing & Pulse
-  "Breathing Effect",
-  "Radiant Waves",
-  "Center Pulse",
-  "Beat Wave",
-  "Rainbow Beat",
-  "Aura Glow",
-  
-  // Wave & Ripple
-  "Ripple",
-  "Ripple Stars",
-  "Smooth Waves",
-  "Waveform Shimmer",
-  
-  // Fire & Heat
-  "Fire Effect",
-  "Candle Flicker",
-  "Lava Flow",
-  "Noise Lava",
-  
-  // Electric & Neon
-  "Electric Pulse",
-  "Neon Streaks",
-  "Hyperspace Tunnel",
-  
-  // Nature & Weather
-  "Aurora Borealis",
-  "Aurora Waves",
-  "Ocean Current",
-  "Storm Pulse",
-  "Sunrise",
-  
-  // Cosmic & Space
-  "Galaxy Swirl",
-  "Plasma",
-  "Noise Rainbow",
-  "Perlin Noise",
-  "Noise Gradient",
-  "Mystic Flow",
-  
-  // Special & Festive
-  "Candy Cane Twist",
-  "Vortex Spin",
-  "Matrix Rain",
-  "Shimmer",
-  "Shimmer Curtain",
-  "Pastel Twinkle",
-  "Falling Stars"
-  ,"Sine Spiral"
-  ,"Color Tunnel"
-  ,"Meteor Shower"
-  ,"Quantum Vortex"
-  ,"Alien Aurora"
-  ,"Hypernova Burst"
+// ── Defaults (overridden at runtime by persistent settings) ───────────────────
+#define DEFAULT_BRIGHTNESS      128   // 0–255
+#define DEFAULT_SPEED           20    // 1–100
+#define DEFAULT_HUE             0     // 0–255
+#define DEFAULT_SAT             255   // 0–255
+#define DEFAULT_PATTERN         0     // index into kPatterns[]
+#define DEFAULT_AUTO_CYCLE      true
+#define AUTO_CYCLE_INTERVAL_MS  12750UL
 
-  // Holiday & Seasonal
-  ,"Christmas Snowflakes"
-  ,"Christmas Lights"
-  ,"Halloween Ghosts"
-  ,"Halloween Pumpkin"
-  ,"Easter Pastel Eggs"
-  ,"New Year Fireworks"
-  ,"Diwali Diyas"
-  ,"St Patricks Shamrock"
-  ,"Valentines Heartbeat"
-  ,"Fourth Of July"
+// ── Wi-Fi ─────────────────────────────────────────────────────────────────────
+#define WIFI_CONNECT_TIMEOUT_MS 15000UL
+#define WIFI_RETRY_DELAY_MS     500UL
+#define WIFI_RECONNECT_INTERVAL 30000UL  // ms between reconnect attempts
+#define DEVICE_HOSTNAME         "fastled"
 
-  // Indian Festivals & Seasons
-  ,"Holi Color Splash"
-  ,"Navratri Garba"
-  ,"Rakhi Celebration"
-  ,"Ganesh Aarti"
-  ,"Pongal Harvest"
-  ,"Monsoon Rains"
-  ,"Onam Pookalam"
-  ,"Janmashtami Peacock"
-  ,"Baisakhi Fields"
-  ,"Makar Sankranti Kites"
-  ,"Durga Puja Dhak"
-  ,"Summer Mango Glow"
-  
-  // Holiday & Seasonal
-  "Halloween Pumpkin",
-  "Halloween Ghosts",
-  "Diwali Diyas",
-  "Diwali Fireworks",
-  "Easter Eggs",
-  "New Year Fireworks",
-  "New Year Bubbles"
-};
+// ── OTA ───────────────────────────────────────────────────────────────────────
+#define OTA_HOSTNAME   DEVICE_HOSTNAME
+// OTA password is set in secrets.h as OTA_PASSWORD
 
-const int TOTAL_PATTERNS = sizeof(patternNames) / sizeof(patternNames[0]);
+// ── Persistence ───────────────────────────────────────────────────────────────
+#define SETTINGS_FILE  "/settings.json"
+#define SETTINGS_VERSION 1
 
+// ── EEPROM (Wi-Fi runtime credentials) ───────────────────────────────────────
+#define EEPROM_SIZE      512
+#define EEPROM_ADDR      0
+#define WIFI_MAGIC       0xA5A5
+
+// ── Logging ───────────────────────────────────────────────────────────────────
+// Set to 1 to enable verbose DEBUG output; 0 for production.
+#ifndef DEBUG_LOGGING
+#define DEBUG_LOGGING 0
 #endif
+
+#define LOG_ERROR(fmt, ...) Serial.printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)  Serial.printf("[WARN]  " fmt "\n", ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...)  Serial.printf("[INFO]  " fmt "\n", ##__VA_ARGS__)
+#if DEBUG_LOGGING
+#define LOG_DEBUG(fmt, ...) Serial.printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+#else
+#define LOG_DEBUG(fmt, ...) do {} while(0)
+#endif
+
+// ── Pattern registry (defined in pattern_runner.ino) ─────────────────────────
+// IMPORTANT: indices are stable — never reorder, only append.
+extern const int TOTAL_PATTERNS;
+
+// Pattern capability flags (1 byte per pattern, stored in PatternDefinition).
+#define PAT_USES_HUE   0x01  // responds to gHue
+#define PAT_USES_SAT   0x02  // responds to gSat
+#define PAT_USES_SPEED 0x04  // respects showFrame() / gSpeed
+#define PAT_USES_PAL   0x08  // uses currentPalette
+
+// Accessors — read directly from kPatterns[], no duplicate arrays.
+const char *patternName(int index);
+uint8_t     patternFlags(int index);
+
+#endif // CONSTANTS_H

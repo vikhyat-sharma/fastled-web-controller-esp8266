@@ -51,23 +51,20 @@ void colorSweep() {
     leds[i] = CHSV(sweepHue, 255, 255);
   }
   sweepHue++;
-  FastLED.show();
-  delay(30);
+  showFrame(30);
 }
 
 void colorFade() {
   fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, 255));
-  FastLED.show();
   gHue++;
-  delay(20);
+  showFrame(20);
 }
 
 void colorWaves() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(gHue + sin8(i * 8 + millis() / 5), 255, 255);
   }
-  FastLED.show();
-  delay(20);
+  showFrame(20);
 }
 
 void gradientWave() {
@@ -116,8 +113,7 @@ void chaseRainbow() {
   fadeToBlackBy(leds, NUM_LEDS, 64);
   int pos = beatsin16(10, 0, NUM_LEDS - 1);
   leds[pos] = CHSV(gHue++, 255, 255);
-  FastLED.show();
-  delay(20);
+  showFrame(20);
 }
 
 void cylonBounce() {
@@ -125,10 +121,9 @@ void cylonBounce() {
   static int dir = 1;
   fadeToBlackBy(leds, NUM_LEDS, 30);
   leds[pos] = CRGB::Red;
-  FastLED.show();
-  delay(15);
   pos += dir;
   if (pos == NUM_LEDS - 1 || pos == 0) dir = -dir;
+  showFrame(15);
 }
 
 void bounceComets() {
@@ -169,8 +164,7 @@ void confetti() {
 void confettiPulse() {
   fadeToBlackBy(leds, NUM_LEDS, 30);
   leds[random16(NUM_LEDS)] += CHSV(gHue + random8(64), 200, 255);
-  FastLED.show();
-  delay(15);
+  showFrame(15);
 }
 
 void juggle() {
@@ -196,8 +190,7 @@ void twinkle2() {
   if (random8() < 50) {
     leds[random16(NUM_LEDS)] = CHSV(random8(), 200, 255);
   }
-  FastLED.show();
-  delay(20);
+  showFrame(20);
 }
 
 void dazzle() {
@@ -205,8 +198,7 @@ void dazzle() {
   for (int i = 0; i < 5; i++) {
     leds[random16(NUM_LEDS)] = CHSV(random8(), 255, 255);
   }
-  FastLED.show();
-  delay(30);
+  showFrame(30);
 }
 
 void glitterFade() {
@@ -219,8 +211,7 @@ void glitterFade() {
 void sparkle() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   leds[random16(NUM_LEDS)] = CHSV(random8(), 255, 255);
-  FastLED.show();
-  delay(20);
+  showFrame(20);
 }
 
 void pixelPop() {
@@ -249,8 +240,7 @@ void breathingEffect() {
 void radiantWaves() {
   uint8_t wave = sin8(millis() / 3);
   fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, wave));
-  FastLED.show();
-  delay(20);
+  showFrame(20);
 }
 
 void centerPulse() {
@@ -278,8 +268,7 @@ void rainbowBeat() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(gHue + (i * beatA / 50), 255, beatB);
   }
-  FastLED.show();
-  delay(20);
+  showFrame(20);
 }
 
 void auraGlow() {
@@ -373,8 +362,7 @@ void candleFlicker() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CRGB(255, random8(100, 255), random8(0, 50));
   }
-  FastLED.show();
-  delay(50);
+  showFrame(50);
 }
 
 void lavaFlow() {
@@ -514,8 +502,7 @@ void perlinNoiseColors() {
     leds[i] = CHSV(noise, 255, 255);
   }
   x += 5;
-  FastLED.show();
-  delay(20);
+  showFrame(20);
 }
 
 void noiseGradient() {
@@ -525,8 +512,7 @@ void noiseGradient() {
     leds[i] = CHSV(noise, 200, 255);
   }
   noiseX += 3;
-  FastLED.show();
-  delay(30);
+  showFrame(30);
 }
 
 void mysticFlow() {
@@ -939,42 +925,9 @@ void summerMangoGlow() {
 }
 
 // ============================================================
-// CATEGORY: Holiday & Seasonal Patterns
+// CATEGORY: Diwali Fireworks (unique, not a duplicate)
 // ============================================================
 
-// Halloween: Pumpkin Orange Glow
-void halloweenPumpkin() {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CHSV(24, 255, (sin8(i * 8 + millis() / 4) / 2) + 128);
-  }
-  if (random8() < 10) {
-    leds[random16(NUM_LEDS)] = CRGB::Green;
-  }
-  showFrame(22);
-}
-
-// Halloween: Ghostly Fade
-void halloweenGhosts() {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CHSV(0, 0, (sin8(i * 6 + millis() / 3) / 3) + 80);
-  }
-  if (random8() < 8) {
-    leds[random16(NUM_LEDS)] = CRGB::White;
-  }
-  showFrame(24);
-}
-
-// Diwali: Diyas (lamps)
-void diwaliDiyas() {
-  fill_solid(leds, NUM_LEDS, CRGB::Black);
-  for (int i = 0; i < NUM_LEDS; i += 14) {
-    leds[i] = CRGB::OrangeRed;
-    if (random8() < 40) leds[i] = CRGB::Yellow;
-  }
-  showFrame(30);
-}
-
-// Diwali: Fireworks
 void diwaliFireworks() {
   fadeToBlackBy(leds, NUM_LEDS, 40);
   if (random8() < 30) {
@@ -996,20 +949,6 @@ void easterEggs() {
   }
   if (random8() < 10) leds[random16(NUM_LEDS)] = CRGB::White;
   showFrame(26);
-}
-
-// New Year: Fireworks
-void newYearFireworks() {
-  fadeToBlackBy(leds, NUM_LEDS, 32);
-  if (random8() < 25) {
-    int pos = random16(NUM_LEDS);
-    leds[pos] = CHSV(random8(), 255, 255);
-    for (int j = 1; j < 8; j++) {
-      int idx = pos + j;
-      if (idx < NUM_LEDS) leds[idx] = CHSV(random8(), 200, 180 - j * 20);
-    }
-  }
-  showFrame(16);
 }
 
 // New Year: Champagne Bubbles

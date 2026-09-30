@@ -1,193 +1,270 @@
+// FastLED Web Controller — ESP8266
+// https://github.com/vikhyat-sharma/fastled-web-controller
+//
+// Boot sequence, Wi-Fi management, OTA, persistent settings, and main loop.
+
 #include <ESP8266WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
 #include <FastLED.h>
+#include <EEPROM.h>
+#include <LittleFS.h>
+#include <ArduinoJson.h>
+
 #include "secrets.h"
 #include "constants.h"
 #include "colormanagement.h"
 #include "patterns.h"
 
-#include <EEPROM.h>
-#include <LittleFS.h>
-#include <fauxmoESP.h>
+// ── Global state definitions ──────────────────────────────────────────────────
+// Declared extern in colormanagement.h; defined exactly once here.
+CRGB             leds[NUM_LEDS];
+uint8_t          gHue        = DEFAULT_HUE;
+uint8_t          gSat        = DEFAULT_SAT;
+uint8_t          gBrightness = DEFAULT_BRIGHTNESS;
+uint8_t          gSpeed      = DEFAULT_SPEED;
+uint8_t          colorPickerR = 255;
+uint8_t          colorPickerG = 0;
+uint8_t          colorPickerB = 0;
+bool             useColorPickerOverride = false;
+CRGBPalette16    currentPalette = RainbowColors_p;
 
-// EEPROM layout
-#define EEPROM_SIZE 512
-#define EEPROM_ADDR 0
-const uint16_t WIFI_MAGIC = 0xA5A5;
+// ── Controller state ──────────────────────────────────────────────────────────
+int              currentPattern  = DEFAULT_PATTERN;
+bool             autoCycle       = DEFAULT_AUTO_CYCLE;
+unsigned long    lastChange      = 0;
+unsigned long    lastReconnect   = 0;
+bool             otaBusy         = false;
 
+// ── Web server ────────────────────────────────────────────────────────────────
+AsyncWebServer server(80);
+
+// ── EEPROM Wi-Fi credential storage ──────────────────────────────────────────
 struct WiFiCreds {
   uint16_t magic;
-  char ssid[32];
-  char password[64];
+  char     ssid[32];
+  char     password[64];
 };
 
-fauxmoESP fauxmo;
-
-// Load/save helpers (defined below)
-bool loadWifiFromEEPROM(String &outSsid, String &outPass);
-bool saveWifiToEEPROM(const String &newSsid, const String &newPassword);
-
-// Implementations
-bool loadWifiFromEEPROM(String &outSsid, String &outPass) {
+static bool loadWifiFromEEPROM(String &outSsid, String &outPass) {
   WiFiCreds creds;
   EEPROM.get(EEPROM_ADDR, creds);
   if (creds.magic != WIFI_MAGIC) return false;
+  // Ensure null-termination before converting to String.
+  creds.ssid[sizeof(creds.ssid) - 1]         = '\0';
+  creds.password[sizeof(creds.password) - 1] = '\0';
   outSsid = String(creds.ssid);
   outPass = String(creds.password);
-  return true;
+  return outSsid.length() > 0;
 }
 
 bool saveWifiToEEPROM(const String &newSsid, const String &newPassword) {
   WiFiCreds creds;
   creds.magic = WIFI_MAGIC;
-  memset(creds.ssid, 0, sizeof(creds.ssid));
+  memset(creds.ssid,     0, sizeof(creds.ssid));
   memset(creds.password, 0, sizeof(creds.password));
-  newSsid.toCharArray(creds.ssid, sizeof(creds.ssid));
+  newSsid.toCharArray(creds.ssid,     sizeof(creds.ssid));
   newPassword.toCharArray(creds.password, sizeof(creds.password));
   EEPROM.put(EEPROM_ADDR, creds);
   return EEPROM.commit();
 }
 
-AsyncWebServer server(80);
+// ── Persistent settings (LittleFS JSON) ──────────────────────────────────────
+static void loadSettings() {
+  if (!LittleFS.exists(SETTINGS_FILE)) {
+    LOG_INFO("No settings file, using defaults");
+    return;
+  }
+  File f = LittleFS.open(SETTINGS_FILE, "r");
+  if (!f) { LOG_WARN("Cannot open settings file"); return; }
 
-CRGB leds[NUM_LEDS];
-bool autoCycle = true;
-uint8_t currentPattern = 0;
-unsigned long lastChange = 0;
+  StaticJsonDocument<256> doc;
+  DeserializationError err = deserializeJson(doc, f);
+  f.close();
+  if (err) {
+    LOG_WARN("Settings JSON parse error: %s — using defaults", err.c_str());
+    return;
+  }
+  if (doc["ver"] | 0) {
+    gBrightness    = constrain((int)(doc["brightness"]  | DEFAULT_BRIGHTNESS),  0, 255);
+    gSpeed         = constrain((int)(doc["speed"]       | DEFAULT_SPEED),       1, 100);
+    gHue           = constrain((int)(doc["hue"]         | DEFAULT_HUE),         0, 255);
+    gSat           = constrain((int)(doc["sat"]         | DEFAULT_SAT),         0, 255);
+    currentPattern = constrain((int)(doc["pattern"]     | DEFAULT_PATTERN),     0, TOTAL_PATTERNS - 1);
+    autoCycle      = doc["autoCycle"] | DEFAULT_AUTO_CYCLE;
+    LOG_INFO("Settings loaded: brightness=%d speed=%d pattern=%d", gBrightness, gSpeed, currentPattern);
+  }
+}
 
-void setup() {
-  Serial.begin(115200);
-  delay(100);
-  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
-  FastLED.setBrightness(gBrightness);
-  FastLED.setMaxPowerInVoltsAndMilliamps(5, 5000);
-  FastLED.clear();
-  FastLED.show();
+// Debounced save — call this after any state change; actual write is deferred.
+static unsigned long settingsDirtyAt = 0;
+static bool          settingsDirty   = false;
+static const unsigned long SETTINGS_WRITE_DELAY_MS = 5000; // coalesce writes
 
-  // Initialize EEPROM and try to load stored WiFi credentials
-  EEPROM.begin(EEPROM_SIZE);
-  String runtimeSsid, runtimePass;
-  if (loadWifiFromEEPROM(runtimeSsid, runtimePass)) {
-    Serial.println("Using stored WiFi credentials from EEPROM");
-    WiFi.begin(runtimeSsid.c_str(), runtimePass.c_str());
+void markSettingsDirty() {
+  settingsDirty   = true;
+  settingsDirtyAt = millis();
+}
+
+static void flushSettingsIfNeeded() {
+  if (!settingsDirty) return;
+  if (millis() - settingsDirtyAt < SETTINGS_WRITE_DELAY_MS) return;
+
+  File f = LittleFS.open(SETTINGS_FILE, "w");
+  if (!f) { LOG_WARN("Cannot write settings"); return; }
+
+  StaticJsonDocument<256> doc;
+  doc["ver"]        = SETTINGS_VERSION;
+  doc["brightness"] = gBrightness;
+  doc["speed"]      = gSpeed;
+  doc["hue"]        = gHue;
+  doc["sat"]        = gSat;
+  doc["pattern"]    = currentPattern;
+  doc["autoCycle"]  = autoCycle;
+  serializeJson(doc, f);
+  f.close();
+  settingsDirty = false;
+  LOG_DEBUG("Settings flushed to flash");
+}
+
+// ── OTA setup ─────────────────────────────────────────────────────────────────
+static void setupOTA() {
+  ArduinoOTA.setHostname(OTA_HOSTNAME);
+#ifdef OTA_PASSWORD
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+#endif
+
+  ArduinoOTA.onStart([]() {
+    otaBusy = true;
+    FastLED.clear();
+    FastLED.show();
+    LOG_INFO("OTA update starting");
+  });
+  ArduinoOTA.onEnd([]() {
+    LOG_INFO("OTA update complete");
+    otaBusy = false;
+  });
+  ArduinoOTA.onError([](ota_error_t e) {
+    LOG_ERROR("OTA error %u", e);
+    otaBusy = false;
+  });
+  ArduinoOTA.onProgress([](unsigned int done, unsigned int total) {
+    // Yield to keep watchdog happy during large uploads.
+    yield();
+  });
+  ArduinoOTA.begin();
+  LOG_INFO("OTA ready");
+}
+
+// ── Wi-Fi connection ──────────────────────────────────────────────────────────
+static void connectWifi() {
+  String storedSsid, storedPass;
+  if (loadWifiFromEEPROM(storedSsid, storedPass)) {
+    LOG_INFO("Connecting with stored credentials (SSID: %s)", storedSsid.c_str());
+    WiFi.begin(storedSsid.c_str(), storedPass.c_str());
   } else {
-    Serial.println("Using compile-time WiFi credentials from secrets.h");
+    LOG_INFO("Connecting with compile-time credentials");
     WiFi.begin(ssid, password);
   }
 
-  unsigned long startAttemptTime = millis();
-
-  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < WIFI_CONNECT_TIMEOUT_MS) {
-    Serial.print(".");
-    delay(500);
+  unsigned long t = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - t < WIFI_CONNECT_TIMEOUT_MS) {
+    yield();
+    delay(WIFI_RETRY_DELAY_MS);
+    Serial.print('.');
   }
+  Serial.println();
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\n✅ Connected to WiFi!");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
-    if (MDNS.begin("fastled")) {
-      Serial.println("mDNS ready: http://fastled.local");
+    LOG_INFO("WiFi connected — IP: %s  RSSI: %d dBm",
+             WiFi.localIP().toString().c_str(), WiFi.RSSI());
+    if (MDNS.begin(DEVICE_HOSTNAME)) {
+      LOG_INFO("mDNS: http://%s.local", DEVICE_HOSTNAME);
     } else {
-      Serial.println("mDNS setup failed.");
+      LOG_WARN("mDNS setup failed");
     }
   } else {
-    Serial.println("\n⚠️ Failed to connect to WiFi within timeout.");
+    LOG_WARN("WiFi connection timed out — continuing without network");
   }
+}
 
-  // Initialize LittleFS for persistent configuration storage
+// ── setup() ───────────────────────────────────────────────────────────────────
+void setup() {
+  Serial.begin(115200);
+  delay(100);
+  LOG_INFO("FastLED Web Controller %s booting", FIRMWARE_VERSION);
+
+  // LEDs first — show something immediately.
+  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, 5000);
+  FastLED.setBrightness(gBrightness);
+  FastLED.clear();
+  FastLED.show();
+
+  // Filesystem.
   if (!LittleFS.begin()) {
-    Serial.println("LittleFS mount failed, attempting to format...");
-    if (LittleFS.format()) {
-      Serial.println("LittleFS formatted, retrying mount...");
-      if (!LittleFS.begin()) {
-        Serial.println("LittleFS mount failed after format");
-      } else {
-        Serial.println("LittleFS mounted after format");
-      }
-    } else {
-      Serial.println("LittleFS format failed");
+    LOG_WARN("LittleFS mount failed — formatting");
+    LittleFS.format();
+    if (!LittleFS.begin()) {
+      LOG_ERROR("LittleFS unavailable after format");
     }
   } else {
-    Serial.println("LittleFS mounted");
+    LOG_INFO("LittleFS mounted");
   }
 
+  // Load persisted settings before Wi-Fi so pattern/brightness are correct.
+  loadSettings();
+  FastLED.setBrightness(gBrightness);
+
+  // Wi-Fi.
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(false);
+  WiFi.hostname(DEVICE_HOSTNAME);
+  EEPROM.begin(EEPROM_SIZE);
+  connectWifi();
+
+  // OTA.
+  setupOTA();
+
+  // Web server routes.
   setupWebServer();
 
-  // Setup Fauxmo (Alexa emulation) - expose pattern names + controls
-  fauxmo.createServer(true);
-  fauxmo.setPort(56700); // This is the default
-  fauxmo.enable(true);
-
-  // Add device to control power and navigation
-  fauxmo.addDevice("FastLED");
-  fauxmo.addDevice("Next Pattern");
-  fauxmo.addDevice("Previous Pattern");
-
-  // Add one device per pattern so users can say "Turn on <pattern name>"
-  for (int i = 0; i < TOTAL_PATTERNS; i++) {
-    fauxmo.addDevice(patternNames[i]);
-  }
-
-  fauxmo.onSetState([](unsigned char device_id, const char *device_name, bool state) {
-    String dname(device_name);
-    // Power control
-    if (dname == "FastLED") {
-      if (state) {
-        // turn on (resume patterns)
-        autoCycle = false;
-      } else {
-        // turn off - clear LEDs
-        fill_solid(leds, NUM_LEDS, CRGB::Black);
-        FastLED.show();
-        autoCycle = false;
-      }
-      return;
-    }
-
-    // Navigation
-    if (dname == "Next Pattern" && state) {
-      currentPattern = (currentPattern + 1) % TOTAL_PATTERNS;
-      lastChange = millis();
-      return;
-    }
-    if (dname == "Previous Pattern" && state) {
-      currentPattern = (currentPattern - 1 + TOTAL_PATTERNS) % TOTAL_PATTERNS;
-      lastChange = millis();
-      return;
-    }
-
-    // Match pattern names (turning a pattern device ON switches to it)
-    if (state) {
-      for (int i = 0; i < TOTAL_PATTERNS; i++) {
-        if (dname == String(patternNames[i])) {
-          currentPattern = i;
-          lastChange = millis();
-          break;
-        }
-      }
-    }
-  });
+  LOG_INFO("Boot complete — %d patterns, free heap: %u bytes",
+           TOTAL_PATTERNS, ESP.getFreeHeap());
 }
 
+// ── loop() ────────────────────────────────────────────────────────────────────
 void loop() {
-  MDNS.update();
-  fauxmo.handle();
-  unsigned long now = millis();
+  // OTA takes priority — skip LED rendering while updating.
+  ArduinoOTA.handle();
+  if (otaBusy) { yield(); return; }
 
-  if (autoCycle) {
-    if (now - lastChange > AUTO_CYCLE_INTERVAL_MS) {
-      currentPattern = (currentPattern + 1) % TOTAL_PATTERNS;
-      lastChange = now;
+  MDNS.update();
+  yield();
+
+  // Non-blocking Wi-Fi reconnect.
+  if (WiFi.status() != WL_CONNECTED) {
+    unsigned long now = millis();
+    if (now - lastReconnect > WIFI_RECONNECT_INTERVAL) {
+      lastReconnect = now;
+      LOG_WARN("WiFi lost — attempting reconnect");
+      WiFi.reconnect();
     }
   }
 
-  runCurrentPattern();
-}
+  // Auto-cycle.
+  unsigned long now = millis();
+  if (autoCycle && (now - lastChange > AUTO_CYCLE_INTERVAL_MS)) {
+    currentPattern = (currentPattern + 1) % TOTAL_PATTERNS;
+    lastChange = now;
+    markSettingsDirty();
+  }
 
-// ============================================================
-// All pattern functions are now organized in patterns.h
-// Color management functions are in colormanagement.h
-// Web server setup is in web_ui.ino
-// ============================================================
+  // Render current pattern.
+  runCurrentPattern();
+
+  // Flush settings to flash if dirty and debounce period has elapsed.
+  flushSettingsIfNeeded();
+}

@@ -1,10 +1,57 @@
 #ifndef PATTERNS_H
 #define PATTERNS_H
 
-// ============================================================
-// CATEGORY: Rainbow & Color Cycling Patterns
-// ============================================================
+// =============================================================================
+// patterns.h — All LED animation functions
+// =============================================================================
+//
+// Each function in this file is one animation pattern. They are called once
+// per loop() iteration by runCurrentPattern() in pattern_runner.ino.
+//
+// RULES FOR EVERY PATTERN FUNCTION
+//   1. Write into the leds[] array.
+//   2. End with showFrame(N) where N is the natural frame delay in milliseconds.
+//      showFrame() pushes the frame to the strip, applies the speed setting,
+//      and calls yield() so Wi-Fi stays responsive. See colormanagement.h.
+//   3. Use "static" local variables to keep state between calls.
+//      Static variables are initialised once and persist across frames.
+//   4. Do NOT call delay() directly — use showFrame() instead.
+//   5. Do NOT call FastLED.setBrightness() — it is set once when brightness
+//      changes via the web UI.
+//
+// HOW TO ADD A NEW PATTERN
+//   Copy the template below, fill it in, then register it in pattern_runner.ino.
+//
+// PATTERN TEMPLATE
+// ─────────────────────────────────────────────────────────────────────────────
+// // One sentence describing what the pattern looks like.
+// void myPatternName() {
+//   static uint8_t phase = 0;          // persistent state between frames
+//
+//   fadeToBlackBy(leds, NUM_LEDS, 20); // optional: fade existing pixels
+//
+//   for (int i = 0; i < NUM_LEDS; i++) {
+//     leds[i] = CHSV(gHue + i * 5, gSat, 200); // write pixels
+//   }
+//
+//   phase++;                           // advance animation state
+//   showFrame(20);                     // display and wait (20 ms base delay)
+// }
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// CHSV(hue, saturation, value) quick reference:
+//   hue:        0=red  42=orange  85=green  128=cyan  170=blue  212=magenta
+//   saturation: 0=white/grey  255=vivid color
+//   value:      0=off  255=full brightness
+//
+// =============================================================================
 
+// =============================================================================
+// Rainbow & Color Cycling
+// =============================================================================
+
+// Full rainbow spread across the strip, slowly rotating through all hues.
+// Full rainbow spread across the strip, slowly rotating through all hues.
 void rainbowCycle() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(gHue + (i * 7), gSat, 255);
@@ -13,6 +60,8 @@ void rainbowCycle() {
   showFrame(20);
 }
 
+// Rainbow cycle with random white sparkle flashes scattered across the strip.
+// Rainbow cycle with random white sparkle flashes scattered across the strip.
 void rainbowGlitter() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(gHue + (i * 7), gSat, 255);
@@ -22,6 +71,8 @@ void rainbowGlitter() {
   showFrame(20);
 }
 
+// Rainbow that pulses in and out like a breathing effect.
+// Rainbow that pulses in and out like a breathing effect.
 void rainbowPulse() {
   static uint8_t pulseBrightness = 0;
   static int delta = 5;
@@ -33,6 +84,8 @@ void rainbowPulse() {
   showFrame(18);
 }
 
+// Slowly shifting rainbow with occasional bright white sparkles.
+// Slowly shifting rainbow with occasional bright white sparkles.
 void rainbowSparkle() {
   static uint8_t baseHue = 0;
   baseHue++;
@@ -45,6 +98,8 @@ void rainbowSparkle() {
   }
 }
 
+// Entire strip cycles through solid colors one hue at a time.
+// Entire strip cycles through solid colors one hue at a time.
 void colorSweep() {
   static uint8_t sweepHue = 0;
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -54,12 +109,16 @@ void colorSweep() {
   showFrame(30);
 }
 
+// Entire strip fades through solid colors, driven by gHue.
+// Entire strip fades through solid colors, driven by gHue.
 void colorFade() {
   fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, 255));
   gHue++;
   showFrame(20);
 }
 
+// Sine-wave color gradient that ripples along the strip over time.
+// Sine-wave color gradient that ripples along the strip over time.
 void colorWaves() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(gHue + sin8(i * 8 + millis() / 5), 255, 255);
@@ -67,6 +126,8 @@ void colorWaves() {
   showFrame(20);
 }
 
+// Smooth sine-wave gradient that glides along the strip, using gSat for richness.
+// Smooth sine-wave gradient that glides along the strip, using gSat for richness.
 void gradientWave() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(gHue + sin8(i * 8 + millis() / 4), gSat, 255);
@@ -74,6 +135,8 @@ void gradientWave() {
   showFrame(20);
 }
 
+// Scrolls through the active color palette (changed via the Palette selector).
+// Scrolls through the active color palette (changed via the Palette selector).
 void paletteCycle() {
   static uint8_t startIndex = 0;
   startIndex += 1;
@@ -81,10 +144,12 @@ void paletteCycle() {
   showFrame(18);
 }
 
-// ============================================================
-// CATEGORY: Movement & Chase Patterns
-// ============================================================
+// =============================================================================
+// Movement & Chase
+// =============================================================================
 
+// Single bright dot travels along the strip, leaving no trail.
+// Single bright dot travels along the strip, leaving no trail.
 void movingDot() {
   static int pos = 0;
   fill_solid(leds, NUM_LEDS, CRGB::Black);
@@ -94,6 +159,8 @@ void movingDot() {
   showFrame(16);
 }
 
+// Bright dot with a fading tail, like a comet streaking across the strip.
+// Bright dot with a fading tail, like a comet streaking across the strip.
 void cometTail() {
   fadeToBlackBy(leds, NUM_LEDS, 40);
   static uint8_t pos = 0;
@@ -102,6 +169,8 @@ void cometTail() {
   showFrame(18);
 }
 
+// Single dot bounces back and forth using a sine wave, leaving a fading trail.
+// Single dot bounces back and forth using a sine wave, leaving a fading trail.
 void sinelon() {
   fadeToBlackBy(leds, NUM_LEDS, 20);
   int pos = beatsin16(13, 0, NUM_LEDS - 1);
@@ -109,6 +178,8 @@ void sinelon() {
   showFrame(14);
 }
 
+// Single dot bounces back and forth, cycling through rainbow colors.
+// Single dot bounces back and forth, cycling through rainbow colors.
 void chaseRainbow() {
   fadeToBlackBy(leds, NUM_LEDS, 64);
   int pos = beatsin16(10, 0, NUM_LEDS - 1);
@@ -116,6 +187,8 @@ void chaseRainbow() {
   showFrame(20);
 }
 
+// Classic Cylon/KITT scanner: red dot bounces end to end with a fading trail.
+// Classic Cylon/KITT scanner: red dot bounces end to end with a fading trail.
 void cylonBounce() {
   static int pos = 0;
   static int dir = 1;
@@ -126,6 +199,10 @@ void cylonBounce() {
   showFrame(15);
 }
 
+// Dot bounces end to end, changing color continuously based on millis().
+// Note: uses millis() for timing instead of showFrame(), so Speed has no effect.
+// Dot bounces end to end, changing color continuously based on millis().
+// Note: uses millis() for timing — Speed slider has no effect.
 void bounceComets() {
   static int pos = 0;
   static int dir = 1;
@@ -135,6 +212,8 @@ void bounceComets() {
   if (pos <= 0 || pos >= NUM_LEDS - 1) dir = -dir;
 }
 
+// Sine-wave color gradient that glides smoothly along the strip.
+// Sine-wave color gradient that glides smoothly along the strip.
 void waveGlide() {
   for (int i = 0; i < NUM_LEDS; i++) {
     uint8_t index = sin8(i * 3 + millis() / 5);
@@ -143,6 +222,10 @@ void waveGlide() {
   showFrame(20);
 }
 
+// Dot travels the strip leaving a rainbow-colored fading trail.
+// Note: no showFrame() call — runs at loop() speed.
+// Dot travels the strip leaving a rainbow-colored fading trail.
+// Note: no showFrame() call — runs at loop() speed.
 void dotTrail() {
   fadeToBlackBy(leds, NUM_LEDS, 30);
   static uint8_t dotPos = 0;
@@ -150,10 +233,12 @@ void dotTrail() {
   dotPos = (dotPos + 1) % NUM_LEDS;
 }
 
-// ============================================================
-// CATEGORY: Dynamic & Interactive Patterns
-// ============================================================
+// =============================================================================
+// Dynamic & Interactive
+// =============================================================================
 
+// Random colored pixels pop up and slowly fade, like confetti falling.
+// Random colored pixels pop up and slowly fade, like confetti falling.
 void confetti() {
   fadeToBlackBy(leds, NUM_LEDS, 10);
   int pos = random16(NUM_LEDS);
@@ -161,12 +246,16 @@ void confetti() {
   showFrame(14);
 }
 
+// Faster confetti: random pixels flash brightly and fade quickly.
+// Faster confetti: random pixels flash brightly and fade quickly.
 void confettiPulse() {
   fadeToBlackBy(leds, NUM_LEDS, 30);
   leds[random16(NUM_LEDS)] += CHSV(gHue + random8(64), 200, 255);
   showFrame(15);
 }
 
+// Eight dots bounce at different speeds, each a different hue.
+// Eight dots bounce at different speeds, each a different hue.
 void juggle() {
   fadeToBlackBy(leds, NUM_LEDS, 20);
   for (int i = 0; i < 8; i++) {
@@ -175,6 +264,8 @@ void juggle() {
   showFrame(14);
 }
 
+// Random pixels twinkle on and off in colors near gHue.
+// Random pixels twinkle on and off in colors near gHue.
 void twinkle() {
   for (int i = 0; i < NUM_LEDS; i++) {
     if (random8() < 20)
@@ -185,6 +276,8 @@ void twinkle() {
   showFrame(24);
 }
 
+// Random pixels flash in fully random colors and fade out.
+// Random pixels flash in fully random colors and fade out.
 void twinkle2() {
   fadeToBlackBy(leds, NUM_LEDS, 20);
   if (random8() < 50) {
@@ -193,6 +286,8 @@ void twinkle2() {
   showFrame(20);
 }
 
+// Five random pixels flash in random colors each frame.
+// Five random pixels flash in random colors each frame.
 void dazzle() {
   fadeToBlackBy(leds, NUM_LEDS, 40);
   for (int i = 0; i < 5; i++) {
@@ -201,6 +296,10 @@ void dazzle() {
   showFrame(30);
 }
 
+// Random pixels appear and fade, creating a soft glittering effect.
+// Note: no showFrame() call — runs at loop() speed.
+// Random pixels appear and fade, creating a soft glittering effect.
+// Note: no showFrame() call — runs at loop() speed.
 void glitterFade() {
   fadeToBlackBy(leds, NUM_LEDS, 20);
   if (random8() < 80) {
@@ -208,12 +307,18 @@ void glitterFade() {
   }
 }
 
+// Single random pixel flashes a random color against a black background.
+// Single random pixel flashes a random color against a black background.
 void sparkle() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   leds[random16(NUM_LEDS)] = CHSV(random8(), 255, 255);
   showFrame(20);
 }
 
+// Random pixels pop to a random color then fade, like popping bubbles.
+// Note: no showFrame() call — runs at loop() speed.
+// Random pixels pop to a random color then fade, like popping bubbles.
+// Note: no showFrame() call — runs at loop() speed.
 void pixelPop() {
   if (random8() < 40) {
     int pos = random16(NUM_LEDS);
@@ -224,10 +329,12 @@ void pixelPop() {
   }
 }
 
-// ============================================================
-// CATEGORY: Breathing & Pulse Patterns
-// ============================================================
+// =============================================================================
+// Breathing & Pulse
+// =============================================================================
 
+// Entire strip breathes in and out in a single color (gHue).
+// Entire strip breathes in and out in a single color (gHue).
 void breathingEffect() {
   static uint8_t brightness = 0;
   static int delta = 5;
@@ -237,12 +344,18 @@ void breathingEffect() {
   showFrame(16);
 }
 
+// Entire strip pulses in brightness using a sine wave driven by millis().
+// Entire strip pulses in brightness using a sine wave driven by millis().
 void radiantWaves() {
   uint8_t wave = sin8(millis() / 3);
   fill_solid(leds, NUM_LEDS, CHSV(gHue, 255, wave));
   showFrame(20);
 }
 
+// Brightness pulses outward from the center, dimming toward the ends.
+// Note: no showFrame() call — runs at loop() speed.
+// Brightness pulses outward from the center, dimming toward the ends.
+// Note: no showFrame() call — runs at loop() speed.
 void centerPulse() {
   int center = NUM_LEDS / 2;
   uint8_t brightness = sin8(millis() / 5);
@@ -252,6 +365,8 @@ void centerPulse() {
   }
 }
 
+// Beat-driven wave: brightness and hue ripple along the strip in sync with a beat.
+// Beat-driven wave: brightness and hue ripple along the strip in sync with a beat.
 void beatWave() {
   CRGBPalette16 palette = PartyColors_p;
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -262,6 +377,8 @@ void beatWave() {
   showFrame(18);
 }
 
+// Rainbow hue shifts driven by two beat oscillators for a pulsing color effect.
+// Rainbow hue shifts driven by two beat oscillators for a pulsing color effect.
 void rainbowBeat() {
   uint8_t beatA = beatsin8(17, 0, 255);
   uint8_t beatB = beatsin8(13, 0, 255);
@@ -271,6 +388,8 @@ void rainbowBeat() {
   showFrame(20);
 }
 
+// Sine-wave glow ripples along the strip, slowly shifting hue.
+// Sine-wave glow ripples along the strip, slowly shifting hue.
 void auraGlow() {
   for (int i = 0; i < NUM_LEDS; i++) {
     uint8_t glow = sin8(millis() / 10 + i * 4);
@@ -280,10 +399,12 @@ void auraGlow() {
   showFrame(22);
 }
 
-// ============================================================
-// CATEGORY: Wave & Ripple Patterns
-// ============================================================
+// =============================================================================
+// Wave & Ripple
+// =============================================================================
 
+// White ripple expands from a random center point, then resets.
+// White ripple expands from a random center point, then resets.
 void ripple() {
   static int center = 0;
   static int step = -1;
@@ -302,6 +423,10 @@ void ripple() {
   showFrame(24);
 }
 
+// Colored ripple expands symmetrically from a random center, fading as it spreads.
+// Note: no showFrame() call — runs at loop() speed.
+// Colored ripple expands symmetrically from a random center, fading as it spreads.
+// Note: no showFrame() call — runs at loop() speed.
 void rippleStars() {
   static int center = 0;
   static uint8_t color = 0;
@@ -323,12 +448,20 @@ void rippleStars() {
   }
 }
 
+// Smooth sine-wave color gradient scrolling along the strip using millis().
+// Note: uses millis() for timing instead of showFrame(), so Speed has no effect.
+// Smooth sine-wave color gradient scrolling along the strip using millis().
+// Note: uses millis() for timing — Speed slider has no effect.
 void smoothWaves() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV((sin8(i * 2 + millis() / 10)), 255, 200);
   }
 }
 
+// Dim blue sine wave shimmers along the strip like light on water.
+// Note: uses millis() for timing instead of showFrame(), so Speed has no effect.
+// Dim blue sine wave shimmers along the strip like light on water.
+// Note: uses millis() for timing — Speed slider has no effect.
 void waveformShimmer() {
   static uint8_t offset = 0;
   offset += 1;
@@ -337,10 +470,12 @@ void waveformShimmer() {
   }
 }
 
-// ============================================================
-// CATEGORY: Fire & Heat Patterns
-// ============================================================
+// =============================================================================
+// Fire & Heat
+// =============================================================================
 
+// Classic fire simulation: heat rises from the base and cools toward the top.
+// Classic fire simulation: heat rises from the base and cools toward the top.
 void fireEffect() {
   static byte heat[NUM_LEDS];
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -358,6 +493,8 @@ void fireEffect() {
   showFrame(18);
 }
 
+// Warm flickering candle light: random orange-yellow variations across all pixels.
+// Warm flickering candle light: random orange-yellow variations across all pixels.
 void candleFlicker() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CRGB(255, random8(100, 255), random8(0, 50));
@@ -365,6 +502,8 @@ void candleFlicker() {
   showFrame(50);
 }
 
+// Slow-moving lava: Perlin noise drives orange-red blobs drifting along the strip.
+// Slow-moving lava: Perlin noise drives orange-red blobs drifting along the strip.
 void lavaFlow() {
   static uint16_t offset = 0;
   offset += 6;
@@ -376,6 +515,10 @@ void lavaFlow() {
   showFrame(18);
 }
 
+// Noise-driven lava: Perlin noise maps directly to hue and brightness.
+// Note: uses millis() for timing instead of showFrame(), so Speed has no effect.
+// Noise-driven lava: Perlin noise maps directly to hue and brightness.
+// Note: uses millis() for timing — Speed slider has no effect.
 void noiseLava() {
   for (int i = 0; i < NUM_LEDS; i++) {
     uint8_t noise = inoise8(i * 10, millis() / 5);
@@ -383,10 +526,12 @@ void noiseLava() {
   }
 }
 
-// ============================================================
-// CATEGORY: Electric & Neon Patterns
-// ============================================================
+// =============================================================================
+// Electric & Neon
+// =============================================================================
 
+// Electric blue-purple pulse bounces back and forth with a soft glow on each side.
+// Electric blue-purple pulse bounces back and forth with a soft glow on each side.
 void electricPulse() {
   fadeToBlackBy(leds, NUM_LEDS, 45);
   uint8_t beat = beatsin8(24, 0, NUM_LEDS - 1);
@@ -396,6 +541,10 @@ void electricPulse() {
   showFrame(12);
 }
 
+// Random neon pixels appear and smear forward, like streaks of light.
+// Note: no showFrame() call — runs at loop() speed.
+// Random neon pixels appear and smear forward, like streaks of light.
+// Note: no showFrame() call — runs at loop() speed.
 void neonStreaks() {
   fadeToBlackBy(leds, NUM_LEDS, 30);
   if (random8() < 15) {
@@ -407,6 +556,8 @@ void neonStreaks() {
   }
 }
 
+// Zooming color tunnel: hue and brightness ripple outward like a hyperspace jump.
+// Zooming color tunnel: hue and brightness ripple outward like a hyperspace jump.
 void hyperspaceTunnel() {
   static uint8_t zoom = 0;
   zoom += 3;
@@ -416,10 +567,12 @@ void hyperspaceTunnel() {
   showFrame(16);
 }
 
-// ============================================================
-// CATEGORY: Nature & Weather Patterns
-// ============================================================
+// =============================================================================
+// Nature & Weather
+// =============================================================================
 
+// Green-teal aurora: Perlin noise drives shifting curtains of light.
+// Green-teal aurora: Perlin noise drives shifting curtains of light.
 void auroraBorealis() {
   static uint8_t baseHue = 90;
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -429,12 +582,18 @@ void auroraBorealis() {
   showFrame(22);
 }
 
+// Gentle aurora: sine waves modulate hue and brightness in cool blue-green tones.
+// Note: uses millis() for timing instead of showFrame(), so Speed has no effect.
+// Gentle aurora: sine waves modulate hue and brightness in cool blue-green tones.
+// Note: uses millis() for timing — Speed slider has no effect.
 void auroraWaves() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(96 + sin8(millis() / 20 + i * 2) / 8, 255, sin8(millis() / 10 + i * 3));
   }
 }
 
+// Deep blue ocean current: sine wave drives brightness like light through water.
+// Deep blue ocean current: sine wave drives brightness like light through water.
 void oceanCurrent() {
   for (int i = 0; i < NUM_LEDS; i++) {
     uint8_t wave = sin8(i * 8 + millis() / 4);
@@ -443,6 +602,8 @@ void oceanCurrent() {
   showFrame(22);
 }
 
+// Dark storm with slow brightness pulses and occasional white lightning strikes.
+// Dark storm with slow brightness pulses and occasional white lightning strikes.
 void stormPulse() {
   static uint8_t wave = 0;
   wave += 2;
@@ -456,6 +617,8 @@ void stormPulse() {
   showFrame(24);
 }
 
+// Slowly brightening warm glow that resets and repeats, like a sunrise.
+// Slowly brightening warm glow that resets and repeats, like a sunrise.
 void sunrise() {
   static uint8_t brightness = 0;
   fill_solid(leds, NUM_LEDS, CHSV(gHue + 10, gSat, brightness));
@@ -464,10 +627,13 @@ void sunrise() {
   showFrame(26);
 }
 
-// ============================================================
-// CATEGORY: Cosmic & Space Patterns
-// ============================================================
+// =============================================================================
+// Cosmic & Space
+// =============================================================================
 
+// Rotating galaxy: hue and brightness spiral outward from a shifting center.
+// Rotating galaxy: hue and brightness spiral outward from a shifting center.
+// Rotating galaxy: hue and brightness spiral outward from a shifting center.
 void galaxySwirl() {
   static uint8_t centerHue = 180;
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -478,6 +644,9 @@ void galaxySwirl() {
   showFrame(22);
 }
 
+// Plasma effect: two sine waves modulate hue and brightness independently.
+// Plasma effect: two sine waves modulate hue and brightness independently.
+// Plasma effect: two sine waves modulate hue and brightness independently.
 void plasma() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(gHue + sin8(i * 8 + millis() / 4), gSat, sin8(i * 8 + millis() / 3));
@@ -485,6 +654,9 @@ void plasma() {
   showFrame(20);
 }
 
+// Perlin noise drives hue across the strip, creating organic color clouds.
+// Perlin noise drives hue across the strip, creating organic color clouds.
+// Perlin noise drives hue across the strip, creating organic color clouds.
 void noiseRainbow() {
   static uint16_t x = 0, y = 0;
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -495,6 +667,9 @@ void noiseRainbow() {
   showFrame(24);
 }
 
+// Perlin noise maps directly to hue, producing slowly morphing color gradients.
+// Perlin noise maps directly to hue, producing slowly morphing color gradients.
+// Perlin noise maps directly to hue, producing slowly morphing color gradients.
 void perlinNoiseColors() {
   static uint16_t x = 0;
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -505,6 +680,9 @@ void perlinNoiseColors() {
   showFrame(20);
 }
 
+// Perlin noise maps to hue with a desaturated palette, creating a soft gradient.
+// Perlin noise maps to hue with a desaturated palette, creating a soft gradient.
+// Perlin noise maps to hue with a desaturated palette, creating a soft gradient.
 void noiseGradient() {
   static uint16_t noiseX = 0;
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -515,16 +693,24 @@ void noiseGradient() {
   showFrame(30);
 }
 
+// Smooth hue gradient scrolls along the strip continuously using millis().
+// Note: uses millis() for timing instead of showFrame(), so Speed has no effect.
+// Smooth hue gradient scrolls along the strip continuously using millis().
+// Note: uses millis() for timing — Speed slider has no effect.
+// Smooth hue gradient scrolls along the strip continuously using millis().
+// Note: uses millis() for timing — Speed slider has no effect.
 void mysticFlow() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV((i * 4 + millis() / 8) % 255, 200, 255);
   }
 }
 
-// ============================================================
-// CATEGORY: Special & Festive Patterns
-// ============================================================
+// =============================================================================
+// Special & Festive
+// =============================================================================
 
+// Two-color alternating stripes scroll along the strip (complementary hues).
+// Two-color alternating stripes scroll along the strip (complementary hues).
 void candyCaneTwist() {
   static uint8_t phase = 0;
   phase += 2;
@@ -535,6 +721,8 @@ void candyCaneTwist() {
   showFrame(24);
 }
 
+// Sine wave modulates both hue and brightness, creating a spinning vortex look.
+// Sine wave modulates both hue and brightness, creating a spinning vortex look.
 void vortexSpin() {
   static uint8_t spin = 0;
   spin += 3;
@@ -545,6 +733,8 @@ void vortexSpin() {
   showFrame(16);
 }
 
+// Green digital rain: random bright pixels fall in columns like the Matrix.
+// Green digital rain: random bright pixels fall in columns like the Matrix.
 void matrixRain() {
   fadeToBlackBy(leds, NUM_LEDS, 35);
   for (int i = 0; i < NUM_LEDS; i += 8) {
@@ -556,6 +746,10 @@ void matrixRain() {
   showFrame(20);
 }
 
+// Random pixels flash in random colors and fade, creating a shimmering texture.
+// Note: no showFrame() call — runs at loop() speed.
+// Random pixels flash in random colors and fade, creating a shimmering texture.
+// Note: no showFrame() call — runs at loop() speed.
 void shimmer() {
   for (int i = 0; i < NUM_LEDS; i++) {
     if (random8() < 20) {
@@ -566,12 +760,20 @@ void shimmer() {
   }
 }
 
+// Blue curtain: pixels flash fully on or fully off at random, like a bead curtain.
+// Note: no showFrame() call — runs at loop() speed.
+// Blue curtain: pixels flash fully on or fully off at random, like a bead curtain.
+// Note: no showFrame() call — runs at loop() speed.
 void shimmerCurtain() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(160, 255, random8() > 240 ? 255 : 0);
   }
 }
 
+// Soft pastel pixels appear randomly and fade, like gentle twinkling lights.
+// Note: no showFrame() call — runs at loop() speed.
+// Soft pastel pixels appear randomly and fade, like gentle twinkling lights.
+// Note: no showFrame() call — runs at loop() speed.
 void pastelTwinkle() {
   fadeToBlackBy(leds, NUM_LEDS, 30);
   if (random8() < 60) {
@@ -580,16 +782,22 @@ void pastelTwinkle() {
   }
 }
 
+// Single white pixel appears at a random position each frame, like a falling star.
+// Note: no showFrame() call — runs at loop() speed.
+// Single white pixel appears at a random position each frame, like a falling star.
+// Note: no showFrame() call — runs at loop() speed.
 void fallingStars() {
   fadeToBlackBy(leds, NUM_LEDS, 40);
   int pos = random(NUM_LEDS);
   leds[pos] = CHSV(0, 0, 255);
 }
 
-// ============================================================
-// CATEGORY: Holiday & Seasonal Patterns
-// ============================================================
+// =============================================================================
+// Global Holidays & Seasonal
+// =============================================================================
 
+// Christmas snowflakes: cool blue base with bright white snowflake flashes.
+// Christmas snowflakes: cool blue base with bright white snowflake flashes.
 void christmasSnowflakes() {
   fadeToBlackBy(leds, NUM_LEDS, 30);
   for (int i = 0; i < NUM_LEDS; i += 10) {
@@ -604,6 +812,8 @@ void christmasSnowflakes() {
   showFrame(28);
 }
 
+// Christmas lights: alternating red and green segments with warm golden sparkles.
+// Christmas lights: alternating red and green segments with warm golden sparkles.
 void christmasLights() {
   static uint8_t phase = 0;
   phase++;
@@ -618,6 +828,8 @@ void christmasLights() {
   showFrame(22);
 }
 
+// Halloween ghosts: purple background with a white ghost shape bouncing end to end.
+// Halloween ghosts: purple background with a white ghost shape bouncing end to end.
 void halloweenGhosts() {
   static int ghostPos = NUM_LEDS / 2;
   static int ghostDir = 1;
@@ -638,6 +850,8 @@ void halloweenGhosts() {
   showFrame(18);
 }
 
+// Halloween pumpkin: flickering orange glow with occasional purple flashes.
+// Halloween pumpkin: flickering orange glow with occasional purple flashes.
 void halloweenPumpkin() {
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(24, 255, random8(160, 255));
@@ -648,6 +862,8 @@ void halloweenPumpkin() {
   showFrame(32);
 }
 
+// Easter pastel eggs: five soft pastel color bands scroll slowly along the strip.
+// Easter pastel eggs: five soft pastel color bands scroll slowly along the strip.
 void easterPastelEggs() {
   static uint8_t shift = 0;
   shift += 2;
@@ -660,6 +876,8 @@ void easterPastelEggs() {
   showFrame(24);
 }
 
+// New Year fireworks: random bursts of color explode symmetrically along the strip.
+// New Year fireworks: random bursts of color explode symmetrically along the strip.
 void newYearFireworks() {
   fadeToBlackBy(leds, NUM_LEDS, 50);
   if (random8() < 28) {
@@ -675,6 +893,8 @@ void newYearFireworks() {
   showFrame(20);
 }
 
+// Diwali diyas: evenly spaced flickering oil lamps with golden spark accents.
+// Diwali diyas: evenly spaced flickering oil lamps with golden spark accents.
 void diwaliDiyas() {
   fadeToBlackBy(leds, NUM_LEDS, 35);
   for (int i = 0; i < NUM_LEDS; i += 14) {
@@ -689,6 +909,8 @@ void diwaliDiyas() {
   showFrame(26);
 }
 
+// St. Patrick's Day: bright green sine wave with occasional yellow-green sparkles.
+// St. Patrick's Day: bright green sine wave with occasional yellow-green sparkles.
 void stPatricksShamrock() {
   static uint8_t wave = 0;
   wave += 4;
@@ -701,6 +923,8 @@ void stPatricksShamrock() {
   showFrame(20);
 }
 
+// Valentine's Day: entire strip pulses in deep red like a heartbeat.
+// Valentine's Day: entire strip pulses in deep red like a heartbeat.
 void valentinesHeartbeat() {
   static uint8_t beat = 80;
   static int8_t delta = 10;
@@ -714,6 +938,8 @@ void valentinesHeartbeat() {
   showFrame(16);
 }
 
+// Fourth of July: red, white, and blue stripes scroll along the strip.
+// Fourth of July: red, white, and blue stripes scroll along the strip.
 void fourthOfJuly() {
   static uint8_t phase = 0;
   phase++;
@@ -730,10 +956,12 @@ void fourthOfJuly() {
   showFrame(25);
 }
 
-// ============================================================
-// CATEGORY: Indian Festivals & Seasons
-// ============================================================
+// =============================================================================
+// Indian Festivals & Seasons
+// =============================================================================
 
+// Holi: random bursts of vivid color splash across the strip.
+// Holi: random bursts of vivid color splash across the strip.
 void holiColorSplash() {
   fadeToBlackBy(leds, NUM_LEDS, 40);
   if (random8() < 45) {
@@ -753,6 +981,8 @@ void holiColorSplash() {
   showFrame(18);
 }
 
+// Navratri Garba: nine festival colors spin rapidly along the strip.
+// Navratri Garba: nine festival colors spin rapidly along the strip.
 void navratriGarba() {
   static uint8_t spin = 0;
   spin += 5;
@@ -765,6 +995,8 @@ void navratriGarba() {
   showFrame(16);
 }
 
+// Rakhi: red and gold alternating bands with occasional white sparkles.
+// Rakhi: red and gold alternating bands with occasional white sparkles.
 void rakhiCelebration() {
   static uint8_t phase = 0;
   phase += 3;
@@ -782,6 +1014,8 @@ void rakhiCelebration() {
   showFrame(22);
 }
 
+// Ganesh Aarti: warm orange flame wave with golden spark accents.
+// Ganesh Aarti: warm orange flame wave with golden spark accents.
 void ganeshAarti() {
   static uint8_t wave = 0;
   wave += 4;
@@ -797,6 +1031,8 @@ void ganeshAarti() {
   showFrame(20);
 }
 
+// Pongal harvest: golden and green sine waves blend like sunlit fields.
+// Pongal harvest: golden and green sine waves blend like sunlit fields.
 void pongalHarvest() {
   static uint8_t dawn = 0;
   dawn++;
@@ -809,6 +1045,8 @@ void pongalHarvest() {
   showFrame(24);
 }
 
+// Monsoon rains: green base with blue raindrops falling at random positions.
+// Monsoon rains: green base with blue raindrops falling at random positions.
 void monsoonRains() {
   fadeToBlackBy(leds, NUM_LEDS, 35);
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -827,6 +1065,8 @@ void monsoonRains() {
   showFrame(22);
 }
 
+// Onam Pookalam: seven floral colors radiate outward from the center like a rangoli.
+// Onam Pookalam: seven floral colors radiate outward from the center like a rangoli.
 void onamPookalam() {
   static uint8_t ring = 0;
   ring += 2;
@@ -841,6 +1081,8 @@ void onamPookalam() {
   showFrame(20);
 }
 
+// Janmashtami Peacock: iridescent blue-green shimmer with golden feather flashes.
+// Janmashtami Peacock: iridescent blue-green shimmer with golden feather flashes.
 void janmashtamiPeacock() {
   static uint8_t shimmer = 0;
   shimmer += 3;
@@ -856,6 +1098,8 @@ void janmashtamiPeacock() {
   showFrame(18);
 }
 
+// Baisakhi fields: golden wheat waves with patches of green, like a harvest field.
+// Baisakhi fields: golden wheat waves with patches of green, like a harvest field.
 void baisakhiFields() {
   static uint8_t breeze = 0;
   breeze += 2;
@@ -869,6 +1113,8 @@ void baisakhiFields() {
   showFrame(22);
 }
 
+// Makar Sankranti kites: sky-blue background with a colorful kite bouncing end to end.
+// Makar Sankranti kites: sky-blue background with a colorful kite bouncing end to end.
 void makarSankrantiKites() {
   fadeToBlackBy(leds, NUM_LEDS, 30);
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -893,6 +1139,8 @@ void makarSankrantiKites() {
   showFrame(16);
 }
 
+// Durga Puja Dhak: red and purple alternating bands pulse like a drumbeat.
+// Durga Puja Dhak: red and purple alternating bands pulse like a drumbeat.
 void durgaPujaDhak() {
   static uint8_t pulse = 0;
   static int8_t delta = 12;
@@ -911,6 +1159,8 @@ void durgaPujaDhak() {
   showFrame(14);
 }
 
+// Summer mango glow: warm orange sine wave with occasional green highlights.
+// Summer mango glow: warm orange sine wave with occasional green highlights.
 void summerMangoGlow() {
   static uint8_t ripen = 0;
   ripen++;
@@ -924,10 +1174,11 @@ void summerMangoGlow() {
   showFrame(26);
 }
 
-// ============================================================
-// CATEGORY: Diwali Fireworks (unique, not a duplicate)
-// ============================================================
+// =============================================================================
+// Additional Holiday Variants
+// =============================================================================
 
+// Diwali fireworks: random bursts of colored sparks shooting to one side.
 void diwaliFireworks() {
   fadeToBlackBy(leds, NUM_LEDS, 40);
   if (random8() < 30) {
@@ -941,7 +1192,7 @@ void diwaliFireworks() {
   showFrame(18);
 }
 
-// Easter: Pastel Eggs
+// Easter eggs: repeating bands of soft pastel colors with occasional white flashes.
 void easterEggs() {
   static const CRGB pastelColors[] = {CRGB(255, 182, 193), CRGB(176, 224, 230), CRGB(152, 251, 152), CRGB(255, 239, 213), CRGB(221, 160, 221)};
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -951,7 +1202,7 @@ void easterEggs() {
   showFrame(26);
 }
 
-// New Year: Champagne Bubbles
+// New Year bubbles: sparse warm-white dots rising like champagne bubbles.
 void newYearBubbles() {
   fadeToBlackBy(leds, NUM_LEDS, 40);
   for (int i = 0; i < 3; i++) {
@@ -961,10 +1212,11 @@ void newYearBubbles() {
   showFrame(24);
 }
 
-// ============================================================
-// NEW: Additional Unique Patterns
-// ============================================================
+// =============================================================================
+// Geometric & Mathematical
+// =============================================================================
 
+// Sine spiral: two overlapping sine waves modulate hue and brightness, creating a spiraling color tunnel.
 void sineSpiral() {
   static uint16_t t = 0;
   t += 2;
@@ -978,6 +1230,7 @@ void sineSpiral() {
   showFrame(18);
 }
 
+// Color tunnel: hue scrolls along the strip like flying through a colored tube.
 void colorTunnel() {
   static uint16_t offset = 0;
   offset += 4;
@@ -988,6 +1241,7 @@ void colorTunnel() {
   showFrame(14);
 }
 
+// Meteor shower: a comet with a fading tail bounces back and forth, shifting hue.
 void meteorShower() {
   static int pos = 0;
   static int dir = 1;
@@ -1008,10 +1262,11 @@ void meteorShower() {
   showFrame(12);
 }
 
-// ============================================================
-// OUT OF THE WORLD PATTERNS
-// ============================================================
+// =============================================================================
+// Experimental
+// =============================================================================
 
+// Quantum vortex: XOR of two sine waves at different frequencies produces chaotic, shifting color bursts.
 void quantumVortex() {
   static uint16_t t = 0;
   t += 3;
@@ -1024,6 +1279,7 @@ void quantumVortex() {
   showFrame(14);
 }
 
+// Alien aurora: Perlin noise drives a cool green-teal aurora with organic movement.
 void alienAurora() {
   static uint16_t t = 0;
   t += 2;
@@ -1034,6 +1290,7 @@ void alienAurora() {
   showFrame(18);
 }
 
+// Hypernova burst: multiplied sine/cosine waves create explosive, chaotic color flares.
 void hypernovaBurst() {
   static uint16_t t = 0;
   t += 4;
